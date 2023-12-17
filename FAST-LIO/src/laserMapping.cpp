@@ -155,6 +155,9 @@ nav_msgs::Path path, path_updated/*发布更新的状态路径*/;
 nav_msgs::Odometry odomAftMapped;
 geometry_msgs::Quaternion geoQuat;
 geometry_msgs::PoseStamped msg_body_pose, msg_body_pose_updated;
+std::string slam_map_frame = "";
+std::string base_frame = "";
+ros::Publisher pose_publisher;
 
 shared_ptr<Preprocess> p_pre(new Preprocess());
 shared_ptr<ImuProcess> p_imu(new ImuProcess());
@@ -529,7 +532,7 @@ void publish_frame_world(const ros::Publisher & pubLaserCloudFull)
         sensor_msgs::PointCloud2 laserCloudmsg;
         pcl::toROSMsg(*laserCloudWorld, laserCloudmsg);
         laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time);
-        laserCloudmsg.header.frame_id = "camera_init";
+        laserCloudmsg.header.frame_id = slam_map_frame;
         pubLaserCloudFull.publish(laserCloudmsg);
         publish_count -= PUBFRAME_PERIOD;
     }
@@ -566,7 +569,7 @@ void publish_frame_body(const ros::Publisher & pubLaserCloudFull_body)
     sensor_msgs::PointCloud2 laserCloudmsg;
     pcl::toROSMsg(*laserCloudIMUBody, laserCloudmsg);
     laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time);
-    laserCloudmsg.header.frame_id = "body";
+    laserCloudmsg.header.frame_id = base_frame;
     laserCloudmsg.header.seq = data_seq;
     pubLaserCloudFull_body.publish(laserCloudmsg);
     cloudBuff.push( pair<int, PointCloudXYZI::Ptr>(data_seq ,laserCloudIMUBody) );  // 缓存所有发给后端的点云
@@ -595,7 +598,7 @@ void publish_effect_world(const ros::Publisher & pubLaserCloudEffect)
     sensor_msgs::PointCloud2 laserCloudFullRes3;
     pcl::toROSMsg(*laserCloudWorld, laserCloudFullRes3);
     laserCloudFullRes3.header.stamp = ros::Time().fromSec(lidar_end_time);
-    laserCloudFullRes3.header.frame_id = "camera_init";
+    laserCloudFullRes3.header.frame_id = slam_map_frame;
     pubLaserCloudEffect.publish(laserCloudFullRes3);
 }
 
@@ -604,7 +607,7 @@ void publish_map(const ros::Publisher & pubLaserCloudMap)
     sensor_msgs::PointCloud2 laserCloudMap;
     pcl::toROSMsg(*featsFromMap, laserCloudMap);
     laserCloudMap.header.stamp = ros::Time().fromSec(lidar_end_time);
-    laserCloudMap.header.frame_id = "camera_init";
+    laserCloudMap.header.frame_id = slam_map_frame;
     pubLaserCloudMap.publish(laserCloudMap);
 }
 
@@ -623,9 +626,9 @@ void set_posestamp(T & out)
 
 void publish_odometry(const ros::Publisher & pubOdomAftMapped)
 {
-    odomAftMapped.header.frame_id = "camera_init";
+    odomAftMapped.header.frame_id = slam_map_frame;
     odomAftMapped.header.seq = data_seq;
-    odomAftMapped.child_frame_id = "body";
+    odomAftMapped.child_frame_id = base_frame;
     odomAftMapped.header.stamp = ros::Time().fromSec(lidar_end_time);// ros::Time().fromSec(lidar_end_time);
     set_posestamp(odomAftMapped.pose);
 
@@ -656,14 +659,20 @@ void publish_odometry(const ros::Publisher & pubOdomAftMapped)
     q.setY(odomAftMapped.pose.pose.orientation.y);
     q.setZ(odomAftMapped.pose.pose.orientation.z);
     transform.setRotation( q );
-    br.sendTransform( tf::StampedTransform( transform, odomAftMapped.header.stamp, "camera_init", "body" ) );
+    br.sendTransform( tf::StampedTransform( transform, odomAftMapped.header.stamp, slam_map_frame, base_frame ) );
+
+    // geometry_msgs::PoseStamped msg_body_pose;
+    // msg_body_pose.header.stamp = ros::Time().fromSec(lidar_end_time);
+    // msg_body_pose.header.frame_id = base_frame;
+    // set_posestamp(msg_body_pose);
 }
 
 void publish_path(const ros::Publisher pubPath)
 {
     set_posestamp(msg_body_pose);
     msg_body_pose.header.stamp = ros::Time().fromSec(lidar_end_time);
-    msg_body_pose.header.frame_id = "camera_init";
+    msg_body_pose.header.frame_id = slam_map_frame;
+    pose_publisher.publish(msg_body_pose);
 
     /*** if path is too large, the rvis will crash ***/
     static int jjj = 0;
@@ -795,7 +804,7 @@ int main(int argc, char** argv)
     nh.param<int>("max_iteration",NUM_MAX_ITERATIONS,4);
     nh.param<string>("map_file_path",map_file_path,"");
     nh.param<string>("common/lid_topic",lid_topic,"/livox/lidar");
-    nh.param<string>("common/imu_topic", imu_topic,"/livox/imu");
+    // nh.param<string>("common/imu_topic", imu_topic,"/livox/imu");
     nh.param<string>("common/keyFrame_topic", keyFrame_topic,"/aft_pgo_path");
     nh.param<string>("common/keyFrame_id_topic", keyFrame_id_topic,"/key_frames_ids");
     nh.param<bool>("common/time_sync_en", time_sync_en, false);
@@ -820,12 +829,19 @@ int main(int argc, char** argv)
     nh.param<vector<double>>("mapping/extrinsic_R", extrinR, vector<double>());
     cout<<"p_pre->lidar_type "<<p_pre->lidar_type<<endl;
 
+    // Get IMU topic
+    std::string slam_pose_topic = "";
+    ros::param::get("~imu_topic",imu_topic);
+    ros::param::get("~slam_map_frame",slam_map_frame);
+    ros::param::get("~base_frame",base_frame);
+    ros::param::get("~slam_pose_topic",slam_pose_topic);
+
     nh.param<bool>("visulize_map", visulize_map, false);
 
     path.header.stamp    = ros::Time::now();
-    path.header.frame_id ="camera_init";
+    path.header.frame_id = slam_map_frame;
     path_updated.header.stamp    = ros::Time::now();
-    path_updated.header.frame_id ="camera_init";
+    path_updated.header.frame_id = slam_map_frame;
 
     /*** variables definition ***/
     int effect_feat_num = 0, frame_num = 0;
@@ -896,6 +912,7 @@ int main(int argc, char** argv)
             ("/path", 100000);
     ros::Publisher pubPath_updated          = nh.advertise<nav_msgs::Path>
             ("/path_updated", 100000);
+    pose_publisher = nh.advertise<geometry_msgs::PoseStamped>(slam_pose_topic, 10);
 //------------------------------------------------------------------------------------------------------
     signal(SIGINT, SigHandle);
     ros::Rate rate(5000);
@@ -1105,7 +1122,7 @@ int main(int argc, char** argv)
                     msg_body_pose_updated.pose.orientation.z = state_updated.rot.z();
                     msg_body_pose_updated.pose.orientation.w = state_updated.rot.w();
                     msg_body_pose_updated.header.stamp = ros::Time().fromSec(lidar_end_time);
-                    msg_body_pose_updated.header.frame_id = "camera_init";
+                    msg_body_pose_updated.header.frame_id = slam_map_frame;
 
                     /*** if path is too large, the rvis will crash ***/
                     static int jjj = 0;
