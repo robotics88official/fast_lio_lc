@@ -1,6 +1,6 @@
 common:
     lid_topic:  "/velodyne_points"
-    imu_topic:  "/imu/data"
+    imu_topic:  "/mavros/imu/data"
     keyFrame_topic: "/aft_pgo_path"
     keyFrame_id_topic: "/key_frames_ids"
     time_sync_en: true         # ONLY turn on when external time synchronization is really not possible
