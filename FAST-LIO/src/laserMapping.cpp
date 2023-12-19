@@ -531,7 +531,8 @@ void publish_frame_world(const ros::Publisher & pubLaserCloudFull)
 
         sensor_msgs::PointCloud2 laserCloudmsg;
         pcl::toROSMsg(*laserCloudWorld, laserCloudmsg);
-        laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time);
+        laserCloudmsg.header.stamp = ros::Time::now();
+        // laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time);
         laserCloudmsg.header.frame_id = slam_map_frame;
         pubLaserCloudFull.publish(laserCloudmsg);
         publish_count -= PUBFRAME_PERIOD;
@@ -568,7 +569,8 @@ void publish_frame_body(const ros::Publisher & pubLaserCloudFull_body)
 
     sensor_msgs::PointCloud2 laserCloudmsg;
     pcl::toROSMsg(*laserCloudIMUBody, laserCloudmsg);
-    laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time);
+    laserCloudmsg.header.stamp = ros::Time::now();
+    // laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time);
     laserCloudmsg.header.frame_id = base_frame;
     laserCloudmsg.header.seq = data_seq;
     pubLaserCloudFull_body.publish(laserCloudmsg);
@@ -580,7 +582,8 @@ void publish_frame_lidar(const ros::Publisher & pubLaserCloudFull_lidar)
 {
     sensor_msgs::PointCloud2 laserCloudmsg;
     pcl::toROSMsg(*feats_undistort, laserCloudmsg);
-    laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time);
+    laserCloudmsg.header.stamp = ros::Time::now();
+    // laserCloudmsg.header.stamp = ros::Time().fromSec(lidar_end_time);
     laserCloudmsg.header.frame_id = "lidar";
     pubLaserCloudFull_lidar.publish(laserCloudmsg);
     publish_count -= PUBFRAME_PERIOD;
@@ -597,7 +600,8 @@ void publish_effect_world(const ros::Publisher & pubLaserCloudEffect)
     }
     sensor_msgs::PointCloud2 laserCloudFullRes3;
     pcl::toROSMsg(*laserCloudWorld, laserCloudFullRes3);
-    laserCloudFullRes3.header.stamp = ros::Time().fromSec(lidar_end_time);
+    laserCloudFullRes3.header.stamp = ros::Time::now();
+    // laserCloudFullRes3.header.stamp = ros::Time().fromSec(lidar_end_time);
     laserCloudFullRes3.header.frame_id = slam_map_frame;
     pubLaserCloudEffect.publish(laserCloudFullRes3);
 }
@@ -606,7 +610,8 @@ void publish_map(const ros::Publisher & pubLaserCloudMap)
 {
     sensor_msgs::PointCloud2 laserCloudMap;
     pcl::toROSMsg(*featsFromMap, laserCloudMap);
-    laserCloudMap.header.stamp = ros::Time().fromSec(lidar_end_time);
+    laserCloudMap.header.stamp = ros::Time::now();
+    // laserCloudMap.header.stamp = ros::Time().fromSec(lidar_end_time);
     laserCloudMap.header.frame_id = slam_map_frame;
     pubLaserCloudMap.publish(laserCloudMap);
 }
@@ -629,7 +634,7 @@ void publish_odometry(const ros::Publisher & pubOdomAftMapped)
     odomAftMapped.header.frame_id = slam_map_frame;
     odomAftMapped.header.seq = data_seq;
     odomAftMapped.child_frame_id = base_frame;
-    odomAftMapped.header.stamp = ros::Time().fromSec(lidar_end_time);// ros::Time().fromSec(lidar_end_time);
+    odomAftMapped.header.stamp = ros::Time::now();// ros::Time().fromSec(lidar_end_time);// ros::Time().fromSec(lidar_end_time);
     set_posestamp(odomAftMapped.pose);
 
     // odoms[data_seq] = odomAftMapped.pose.pose;  // 保存历史的odom
@@ -670,9 +675,9 @@ void publish_odometry(const ros::Publisher & pubOdomAftMapped)
 void publish_path(const ros::Publisher pubPath)
 {
     set_posestamp(msg_body_pose);
-    msg_body_pose.header.stamp = ros::Time().fromSec(lidar_end_time);
+    msg_body_pose.header.stamp = ros::Time::now();
+    // msg_body_pose.header.stamp = ros::Time().fromSec(lidar_end_time);
     msg_body_pose.header.frame_id = slam_map_frame;
-    pose_publisher.publish(msg_body_pose);
 
     /*** if path is too large, the rvis will crash ***/
     static int jjj = 0;
@@ -682,6 +687,7 @@ void publish_path(const ros::Publisher pubPath)
         path.poses.push_back(msg_body_pose);
         pubPath.publish(path);
     }
+    pose_publisher.publish(msg_body_pose);
 }
 
 void h_share_model(state_ikfom &s, esekfom::dyn_share_datastruct<double> &ekfom_data)
@@ -1121,7 +1127,8 @@ int main(int argc, char** argv)
                     msg_body_pose_updated.pose.orientation.y = state_updated.rot.y();
                     msg_body_pose_updated.pose.orientation.z = state_updated.rot.z();
                     msg_body_pose_updated.pose.orientation.w = state_updated.rot.w();
-                    msg_body_pose_updated.header.stamp = ros::Time().fromSec(lidar_end_time);
+                    msg_body_pose_updated.header.stamp = ros::Time::now();
+                    // msg_body_pose_updated.header.stamp = ros::Time().fromSec(lidar_end_time);
                     msg_body_pose_updated.header.frame_id = slam_map_frame;
 
                     /*** if path is too large, the rvis will crash ***/
