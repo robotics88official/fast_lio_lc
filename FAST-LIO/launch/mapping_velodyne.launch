@@ -1,6 +1,11 @@
 <launch>
   <!-- Launch file for velodyne16 VLP-16 LiDAR -->
 
+    <arg name="imu_topic" default="/mavros/imu/data"/>
+    <arg name="slam_map_frame" default="slam_map"/>
+    <arg name="base_frame" default="base_link"/>
+    <arg name="slam_pose_topic" default="/decco/pose"/>
+
     <arg name="lc_enable" default="true"/>
     <arg name="rviz" default="true" />
 
@@ -27,7 +32,13 @@
     <param name="updateState" value="$(arg lc_enable)"/>   <!-- 打开更新状态 -->
     <param name="updateFrequency" value="30"/> <!-- 每接受updateFrequency个点云，更新一次， 不能太大-->
     
-    <node pkg="fast_lio_lc" type="fastlio_mapping" name="laserMapping" output="screen" /> 
+    <node pkg="fast_lio_lc" type="fastlio_mapping" name="laserMapping" output="screen" respawn="true">
+      <param name="imu_topic" type="string" value="$(arg imu_topic)"/>
+      <param name="slam_map_frame" type="string" value="$(arg slam_map_frame)"/>
+      <param name="base_frame" type="string" value="$(arg base_frame)"/>
+      <param name="slam_pose_topic" type="string" value="$(arg slam_pose_topic)"/>
+      <param name="frame_id" type="string" value="base_link"/>
+    </node> 
 
     <group if="$(arg rviz)">
     <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz_fast_lio" args="-d $(find fast_lio_lc)/rviz_cfg/loam_livox.rviz" />

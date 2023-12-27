@@ -1,5 +1,5 @@
 common:
-    lid_topic:  "/livox_points"
+    lid_topic:  "/livox/lidar"
     imu_topic:  "/livox/imu"
     time_sync_en: false         # ONLY turn on when external time synchronization is really not possible
     
@@ -15,7 +15,7 @@ mapping:
     b_gyr_cov: 0.0001
     fov_degree:    100
     det_range:     260.0
-    extrinsic_T: [ 0.05512, 0.02226, -0.0297 ]
+    extrinsic_T: [ -0.011, -0.02329, -0.04412 ]
     extrinsic_R: [ 1, 0, 0,
                    0, 1, 0,
                    0, 0, 1]
