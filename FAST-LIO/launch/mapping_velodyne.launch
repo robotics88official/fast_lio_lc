@@ -1,10 +1,15 @@
 <launch>
   <!-- Launch file for velodyne16 VLP-16 LiDAR -->
 
+    <arg name="imu_topic" default="/mavros/imu/data"/>
+    <arg name="slam_map_frame" default="slam_map"/>
+    <arg name="base_frame" default="base_link"/>
+    <arg name="slam_pose_topic" default="/decco/pose"/>
+
     <arg name="lc_enable" default="true"/>
     <arg name="rviz" default="true" />
 
-    <rosparam command="load" file="$(find fast_lio)/config/velodyne16.yaml" />
+    <rosparam command="load" file="$(find fast_lio_lc)/config/velodyne16.yaml" />
 
     <!-- 调参说明：  -->
     <!-- point_filter_num，和filter_size_surf是滤波参数，越小前端效果越好，但运行越慢 -->
@@ -27,10 +32,16 @@
     <param name="updateState" value="$(arg lc_enable)"/>   <!-- 打开更新状态 -->
     <param name="updateFrequency" value="30"/> <!-- 每接受updateFrequency个点云，更新一次， 不能太大-->
     
-    <node pkg="fast_lio" type="fastlio_mapping" name="laserMapping" output="screen" /> 
+    <node pkg="fast_lio_lc" type="fastlio_mapping" name="laserMapping" output="screen" respawn="true">
+      <param name="imu_topic" type="string" value="$(arg imu_topic)"/>
+      <param name="slam_map_frame" type="string" value="$(arg slam_map_frame)"/>
+      <param name="base_frame" type="string" value="$(arg base_frame)"/>
+      <param name="slam_pose_topic" type="string" value="$(arg slam_pose_topic)"/>
+      <param name="frame_id" type="string" value="base_link"/>
+    </node> 
 
     <group if="$(arg rviz)">
-    <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz_fast_lio" args="-d $(find fast_lio)/rviz_cfg/loam_livox.rviz" />
+    <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz_fast_lio" args="-d $(find fast_lio_lc)/rviz_cfg/loam_livox.rviz" />
     </group>
 
 </launch>

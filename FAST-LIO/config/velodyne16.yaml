@@ -1,8 +1,6 @@
 common:
     lid_topic:  "/velodyne_points"
-    imu_topic:  "/imu/data"
-    keyFrame_topic: "/aft_pgo_path"
-    keyFrame_id_topic: "/key_frames_ids"
+    imu_topic:  "/mavros/imu/data"
     time_sync_en: true         # ONLY turn on when external time synchronization is really not possible
     
 preprocess:
@@ -17,7 +15,7 @@ mapping:
     b_gyr_cov: 0.0001
     fov_degree:    180
     det_range:     100.0
-    extrinsic_T: [ 0, 0, 0.28]
+    extrinsic_T: [ 0, 0, -0.1]
     extrinsic_R: [ 1, 0, 0, 
                    0, 1, 0, 
                    0, 0, 1]
