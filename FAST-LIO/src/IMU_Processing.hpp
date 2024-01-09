@@ -195,7 +195,8 @@ void ImuProcess::IMU_init(const MeasureGroup &meas, esekfom::esekf<state_ikfom, 
   const auto& orientation = meas.imu.front()->orientation;
   // 如果orientation消息可用的话,以IMU的orientaion作为初始姿态
   if( orientation.x != 0 || orientation.y != 0 || orientation.z != 0 || orientation.w != 0 ){
-    Eigen::Quaterniond qua(orientation.w, orientation.x, orientation.y, orientation.z);
+    // Eigen::Quaterniond qua(orientation.w, orientation.x, orientation.y, orientation.z);
+    Eigen::Quaterniond qua(1.0 , 0.0, 0.0, 0.0);
     init_state.rot = qua;
   }
   //state_inout.rot = Eye3d; // Exp(mean_acc.cross(V3D(0, 0, -1 / scale_gravity)));
