@@ -193,11 +193,17 @@ void ImuProcess::IMU_init(const MeasureGroup &meas, esekfom::esekf<state_ikfom, 
   state_ikfom init_state = kf_state.get_x();
   init_state.grav = S2(- mean_acc / mean_acc.norm() * G_m_s2);
   const auto& orientation = meas.imu.front()->orientation;
+
+  // TODO: Determine if this might actually be useful in certain cases. Livox lidar has 0 orientation, and
+  // keeping this code seems to mess things up when using /mavros/imu/data (causes strange rotations in base_link)
+  
   // 如果orientation消息可用的话,以IMU的orientaion作为初始姿态
-  if( orientation.x != 0 || orientation.y != 0 || orientation.z != 0 || orientation.w != 0 ){
-    Eigen::Quaterniond qua(orientation.w, orientation.x, orientation.y, orientation.z);
-    init_state.rot = qua;
-  }
+  // if( orientation.x != 0 || orientation.y != 0 || orientation.z != 0 || orientation.w != 0 ){
+  //   Eigen::Quaterniond qua(orientation.w, orientation.x, orientation.y, orientation.z);
+  //   init_state.rot = qua;
+  // }
+
+
   //state_inout.rot = Eye3d; // Exp(mean_acc.cross(V3D(0, 0, -1 / scale_gravity)));
   init_state.bg  = mean_gyr;
   init_state.offset_T_L_I = Lidar_T_wrt_IMU;
