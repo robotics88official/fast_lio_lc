@@ -20,7 +20,7 @@
 	<param name="runtime_pos_log_enable" type="bool" value="0" />
 	<param name="pcd_save_enable" type="bool" value="0" />
 
-    <node pkg="fast_lio_lc" type="fastlio_mapping" name="laserMapping" output="screen">
+    <node pkg="fast_lio_lc" type="fastlio_mapping" name="fast_lio_lc" output="screen">
 		<param name="imu_topic" type="string" value="$(arg imu_topic)"/>
 		<param name="slam_map_frame" type="string" value="$(arg slam_map_frame)"/>
 		<param name="base_frame" type="string" value="$(arg base_frame)"/>
