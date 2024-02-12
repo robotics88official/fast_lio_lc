@@ -21,7 +21,7 @@
     <param name="filter_size_surf" type="double" value="0.5" />   <!-- 对当前点云的filter -->
     <param name="filter_size_map" type="double" value="0.2" />    <!-- 对地图的filter -->
     <param name="cube_side_length" type="double" value="1000" />
-    <param name="runtime_pos_log_enable" type="bool" value="0" />
+    <param name="debug_mode_enable" type="bool" value="0" />
     <param name="pcd_save_enable" type="bool" value="0" />
 
     <!-- visualization -->

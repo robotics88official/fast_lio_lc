@@ -85,7 +85,7 @@ double kdtree_incremental_time = 0.0, kdtree_search_time = 0.0, kdtree_delete_ti
 double T1[MAXN], s_plot[MAXN], s_plot2[MAXN], s_plot3[MAXN], s_plot4[MAXN], s_plot5[MAXN], s_plot6[MAXN], s_plot7[MAXN], s_plot8[MAXN], s_plot9[MAXN], s_plot10[MAXN], s_plot11[MAXN];
 double match_time = 0, solve_time = 0, solve_const_H_time = 0;
 int    kdtree_size_st = 0, kdtree_size_end = 0, add_point_size = 0, kdtree_delete_counter = 0;
-bool   runtime_pos_log = false, pcd_save_en = false, time_sync_en = false;
+bool   debug_mode = false, pcd_save_en = false, time_sync_en = false;
 /**************************/
 
 float res_last[100000] = {0.0};
@@ -823,7 +823,7 @@ int main(int argc, char** argv)
     nh.param<int>("preprocess/scan_line", p_pre->N_SCANS, 16);
     nh.param<int>("point_filter_num", p_pre->point_filter_num, 2);
     nh.param<bool>("feature_extract_enable", p_pre->feature_enabled, 0);
-    nh.param<bool>("runtime_pos_log_enable", runtime_pos_log, 0);
+    nh.param<bool>("debug_mode_enable", debug_mode, 0);
     nh.param<bool>("pcd_save_enable", pcd_save_en, 0);
     nh.param<vector<double>>("mapping/extrinsic_T", extrinT, vector<double>());
     nh.param<vector<double>>("mapping/extrinsic_R", extrinR, vector<double>());
@@ -863,6 +863,7 @@ int main(int argc, char** argv)
 
     Lidar_T_wrt_IMU<<VEC_FROM_ARRAY(extrinT);
     Lidar_R_wrt_IMU<<MAT_FROM_ARRAY(extrinR);
+    p_imu->set_debug_mode(debug_mode);
     p_imu->set_extrinsic(Lidar_T_wrt_IMU, Lidar_R_wrt_IMU);
     p_imu->set_gyr_cov(V3D(gyr_cov, gyr_cov, gyr_cov));
     p_imu->set_acc_cov(V3D(acc_cov, acc_cov, acc_cov));
@@ -875,18 +876,19 @@ int main(int argc, char** argv)
 
     /*** debug record ***/
     FILE *fp;
-    string pos_log_dir = root_dir + "/Log/pos_log.txt";
-    fp = fopen(pos_log_dir.c_str(),"w");
-
     ofstream fout_pre, fout_out, fout_dbg;
-    fout_pre.open(DEBUG_FILE_DIR("mat_pre.txt"),ios::out);
-    fout_out.open(DEBUG_FILE_DIR("mat_out.txt"),ios::out);
-    fout_dbg.open(DEBUG_FILE_DIR("dbg.txt"),ios::out);
-    if (fout_pre && fout_out)
-        cout << "~~~~"<<ROOT_DIR<<" file opened" << endl;
-    else
-        cout << "~~~~"<<ROOT_DIR<<" doesn't exist" << endl;
-
+    string pos_log_dir = root_dir + "/Log/pos_log.txt";
+    if (debug_mode) {
+        fp = fopen(pos_log_dir.c_str(),"w");
+        fout_pre.open(DEBUG_FILE_DIR("mat_pre.txt"),ios::out);
+        fout_out.open(DEBUG_FILE_DIR("mat_out.txt"),ios::out);
+        fout_dbg.open(DEBUG_FILE_DIR("dbg.txt"),ios::out);
+        if (fout_pre && fout_out)
+            cout << "~~~~"<<ROOT_DIR<<" file opened" << endl;
+        else
+            cout << "~~~~"<<ROOT_DIR<<" doesn't exist" << endl;
+    }
+    
     /*** ROS subscribe initialization ***/
     ros::Subscriber sub_pcl = p_pre->lidar_type == AVIA ? \
         nh.subscribe(lid_topic, 200000, livox_pcl_cbk) : \
@@ -1169,8 +1171,13 @@ int main(int argc, char** argv)
             feats_down_world->resize(feats_down_size);
 
             V3D ext_euler = SO3ToEuler(state_point.offset_R_L_I);
-            fout_pre<<setw(20)<<Measures.lidar_beg_time - first_lidar_time<<" "<<euler_cur.transpose()<<" "<< state_point.pos.transpose()<<" "<<ext_euler.transpose() << " "<<state_point.offset_T_L_I.transpose()<< " " << state_point.vel.transpose() \
-            <<" "<<state_point.bg.transpose()<<" "<<state_point.ba.transpose()<<" "<<state_point.grav<< endl;
+            if (debug_mode) {
+                fout_pre <<setw(20) << Measures.lidar_beg_time - first_lidar_time << " " <<
+                euler_cur.transpose() << " " << state_point.pos.transpose() << " "<<ext_euler.transpose() << " " <<
+                state_point.offset_T_L_I.transpose() << " " << state_point.vel.transpose()  << " " <<
+                state_point.bg.transpose()<<" "<<state_point.ba.transpose()<<" "<<state_point.grav<< endl;
+            }
+            
 
             if(visulize_map) // If you need to see map point
             {
@@ -1221,7 +1228,7 @@ int main(int argc, char** argv)
             // publish_effect_world(pubLaserCloudEffect);
 
             /*** Debug variables ***/
-            if (runtime_pos_log)
+            if (debug_mode)
             {
                 frame_num ++;
                 kdtree_size_end = ikdtree.size();
@@ -1267,11 +1274,12 @@ int main(int argc, char** argv)
         pcd_writer.writeBinary(all_points_dir, *pcl_wait_save);
     }
 
-    fout_out.close();
-    fout_pre.close();
-
-    if (runtime_pos_log)
+    if (debug_mode)
     {
+
+        fout_out.close();
+        fout_pre.close();
+
         vector<double> t, s_vec, s_vec2, s_vec3, s_vec4, s_vec5, s_vec6, s_vec7;
         FILE *fp2;
         string log_dir = root_dir + "/Log/fast_lio_time_log.csv";
