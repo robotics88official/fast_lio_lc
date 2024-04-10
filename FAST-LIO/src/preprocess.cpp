@@ -57,6 +57,10 @@ void Preprocess::process(const sensor_msgs::PointCloud2::ConstPtr &msg, PointClo
   case VELO16:
     velodyne_handler(msg);
     break;
+
+  case VELO_SIM:
+    velodyne_sim_handler(msg);
+    break;
   
   default:
     printf("Error LiDAR Type");
@@ -264,6 +268,40 @@ void Preprocess::oust64_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
 }
 
 #define MAX_LINE_NUM 64
+
+void Preprocess::velodyne_sim_handler(const sensor_msgs::PointCloud2::ConstPtr &msg) {
+    pl_surf.clear();
+
+    pcl::PointCloud<velodyne_ros::Point> pl_orig;
+    pcl::fromROSMsg(*msg, pl_orig);
+
+    int plsize = pl_orig.points.size();
+    pl_surf.reserve(plsize);
+
+    for (int i = 0; i < plsize; i++)
+    {
+      PointType added_pt;
+      
+      added_pt.normal_x = 0;
+      added_pt.normal_y = 0;
+      added_pt.normal_z = 0;
+      added_pt.x = pl_orig.points[i].x;
+      added_pt.y = pl_orig.points[i].y;
+      added_pt.z = pl_orig.points[i].z;
+      added_pt.intensity = pl_orig.points[i].intensity;
+      added_pt.curvature = pl_orig.points[i].time / 1000.0;
+
+      if (i % point_filter_num == 0)
+      {
+        if(added_pt.x*added_pt.x+added_pt.y*added_pt.y+added_pt.z*added_pt.z > blind)
+        {
+          pl_surf.points.push_back(added_pt);
+        }
+      }
+    }
+    
+    return;
+}
 
 void Preprocess::velodyne_handler(const sensor_msgs::PointCloud2::ConstPtr &msg)
 {
