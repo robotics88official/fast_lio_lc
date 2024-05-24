@@ -15,7 +15,7 @@ mapping:
     b_gyr_cov: 0.0001
     fov_degree:    180
     det_range:     260.0
-    extrinsic_T: [ -0.011, -0.02329, -0.04412 ]
+    extrinsic_T: [ -0.011, -0.02329, 0.04412 ] # Lidar center w/r/t IMU
     extrinsic_R: [ 1, 0, 0,
                    0, 1, 0,
                    0, 0, 1]
