@@ -70,10 +70,58 @@
 #include <livox_ros_driver/CustomMsg.h>
 #include "preprocess.h"
 #include <ikd-Tree/ikd_Tree.h>
-#include <pcl/common/transforms.h>  
+  
+#include <pcl/search/impl/search.hpp>
+#include <pcl/range_image/range_image.h>
 #include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/common/common.h>
+#include <pcl/common/transforms.h>
+#include <pcl/registration/icp.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/filters/filter.h>
+#include <pcl/filters/crop_box.h>
+#include <pcl_conversions/pcl_conversions.h>
+
 #include <map>
 #include <unordered_map>
+
+#include <std_msgs/Header.h>
+#include <std_msgs/Float64MultiArray.h>
+#include <sensor_msgs/Imu.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/NavSatFix.h>
+#include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
+
+// gstam
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/slam/PriorFactor.h>
+#include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/navigation/GPSFactor.h>
+#include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/CombinedImuFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/Marginals.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/ISAM2.h>
+
+// gnss
+#include "GNSS_Processing.hpp"
+#include "sensor_msgs/NavSatFix.h"
+
+// save map
+#include "fast_lio_sam/save_map.h"
+#include "fast_lio_sam/save_pose.h"
+
+// save data in kitti format 
+#include <sstream>
+#include <fstream>
+#include <iomanip>
 
 #define INIT_TIME           (0.1)
 #define LASER_POINT_COV     (0.001)
@@ -151,7 +199,7 @@ esekfom::esekf<state_ikfom, 12, input_ikfom> kf;
 state_ikfom state_point;
 vect3 pos_lid;
 
-nav_msgs::Path path, path_updated/*发布更新的状态路径*/;
+nav_msgs::Path path, path_updated/*Publish updated status path*/;
 nav_msgs::Odometry odomAftMapped;
 geometry_msgs::Quaternion geoQuat;
 geometry_msgs::PoseStamped msg_body_pose, msg_body_pose_updated;
@@ -162,9 +210,9 @@ ros::Publisher pose_publisher;
 shared_ptr<Preprocess> p_pre(new Preprocess());
 shared_ptr<ImuProcess> p_imu(new ImuProcess());
 
-/*** 维护关键帧机制 ***/
-// 思路：缓存历史的lidar帧，根据订阅的seq来判断哪一帧是关键帧
-vector<PointCloudXYZI::Ptr> cloudKeyFrames;  // 存放历史的关键帧点云
+/*** Maintain keyframe mechanism ***/
+// Idea: cache historical lidar frames and determine which frame is a key frame based on the subscribed seq
+vector<PointCloudXYZI::Ptr> cloudKeyFrames;  // Store historical keyframe point clouds
 queue< pair<uint32_t, PointCloudXYZI::Ptr> > cloudBuff;      // 缓存部分历史的lidar帧，用于提取出关键帧点云
 vector<uint32_t> idKeyFrames;           // keyframes 的 id
 queue<uint32_t> idKeyFramesBuff;         // keyframes 的 id buffer
@@ -829,6 +877,15 @@ int main(int argc, char** argv)
     nh.param<vector<double>>("mapping/extrinsic_R", extrinR, vector<double>());
     cout<<"p_pre->lidar_type "<<p_pre->lidar_type<<endl;
 
+    // gnss
+    nh.param<string>("common/gnss_topic", gnss_topic,"/gps/fix");
+    nh.param<vector<double>>("mapping/extrinR_Gnss2Lidar", extrinR_Gnss2Lidar, vector<double>());
+    nh.param<vector<double>>("mapping/extrinT_Gnss2Lidar", extrinT_Gnss2Lidar, vector<double>());
+    nh.param<bool>("useImuHeadingInitialization", useImuHeadingInitialization, false);
+    nh.param<bool>("useGpsElevation", useGpsElevation, false);
+    nh.param<float>("gpsCovThreshold", gpsCovThreshold, 2.0);
+    nh.param<float>("poseCovThreshold", poseCovThreshold, 25.0);
+
     // Get IMU topic
     std::string slam_pose_topic = "";
     ros::param::get("~imu_topic",imu_topic);
@@ -842,6 +899,11 @@ int main(int argc, char** argv)
     path.header.frame_id = slam_map_frame;
     path_updated.header.stamp    = ros::Time::now();
     path_updated.header.frame_id = slam_map_frame;
+
+    gtsam::ISAM2Params parameters;
+    parameters.relinearizeThreshold = 0.01;
+    parameters.relinearizeSkip = 1;
+    isam = new gtsam::ISAM2(parameters);
 
     /*** variables definition ***/
     int effect_feat_num = 0, frame_num = 0;
