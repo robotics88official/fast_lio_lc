@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(fast_lio_lc)
 
 SET(CMAKE_BUILD_TYPE "Debug")
+# SET(CMAKE_BUILD_TYPE "Realese")
 
 ADD_COMPILE_OPTIONS(-std=c++14 )
 ADD_COMPILE_OPTIONS(-std=c++14 )
@@ -58,6 +59,10 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(Eigen3 REQUIRED)
 find_package(PCL 1.8 REQUIRED)
+find_package (GeographicLib REQUIRED)
+
+find_package( GTSAMCMakeTools )
+find_package(GTSAM REQUIRED QUIET)
 
 message(Eigen: ${EIGEN3_INCLUDE_DIR})
 
@@ -66,11 +71,20 @@ include_directories(
   ${EIGEN3_INCLUDE_DIR}
   ${PCL_INCLUDE_DIRS}
   ${PYTHON_INCLUDE_DIRS}
+  ${GTSAM_INCLUDE_DIR}
+  ${GeographicLib_INCLUDE_DIRS}
   include)
 
 add_message_files(
   FILES
   Pose6D.msg
+)
+
+add_service_files(
+  DIRECTORY srv
+  FILES
+  save_map.srv
+  save_pose.srv
 )
 
 generate_messages(
@@ -87,4 +101,9 @@ catkin_package(
 add_executable(fastlio_mapping src/laserMapping.cpp include/ikd-Tree/ikd_Tree.cpp src/preprocess.cpp)
 target_link_libraries(fastlio_mapping ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES})
 target_include_directories(fastlio_mapping PRIVATE ${PYTHON_INCLUDE_DIRS})
+target_link_libraries(fastlio_mapping ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES}  ${GeographicLib_LIBRARIES} ikd_Tree preprocess gtsam) 
 add_dependencies(fastlio_mapping ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
+add_library(ikd_Tree include/ikd-Tree/ikd_Tree.cpp)
+add_library(preprocess  src/preprocess.cpp)
+# add_executable(fastlio_sam_mapping src/laserMapping.cpp)

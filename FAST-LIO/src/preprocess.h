@@ -38,7 +38,7 @@ namespace velodyne_ros {
       PCL_ADD_POINT4D;
       float intensity;
       float time;
-      uint16_t ring;
+      std::uint16_t ring;
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
 }  // namespace velodyne_ros
@@ -48,7 +48,25 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(velodyne_ros::Point,
     (float, z, z)
     (float, intensity, intensity)
     (float, time, time)
-    (uint16_t, ring, ring)
+    (std::uint16_t, ring, ring)
+)
+
+namespace rslidar_ros {
+    struct EIGEN_ALIGN16 Point {
+        PCL_ADD_POINT4D;
+        float intensity;
+        float time;
+        std::uint16_t ring;
+        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    };
+}  // namespace rslidar_ros
+POINT_CLOUD_REGISTER_POINT_STRUCT(rslidar_ros::Point,
+                                  (float, x, x)
+                                  (float, y, y)
+                                  (float, z, z)
+                                  (float, intensity, curvature)
+                                  (float, time, normal_x)
+                                  (std::uint16_t, ring, ring)
 )
 
 namespace ouster_ros {
@@ -56,9 +74,9 @@ namespace ouster_ros {
       PCL_ADD_POINT4D;
       float intensity;
       uint32_t t;
-      uint16_t reflectivity;
+      std::uint16_t reflectivity;
       uint8_t  ring;
-      uint16_t ambient;
+      std::uint16_t ambient;
       uint32_t range;
       EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   };
@@ -78,6 +96,28 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
     (std::uint32_t, range, range)
 )
 
+/**
+ * 6D位姿点云结构定义
+*/
+struct PointXYZIRPYT
+{
+    PCL_ADD_POINT4D     
+    PCL_ADD_INTENSITY;  
+    float roll;         
+    float pitch;
+    float yaw;
+    double time;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW   
+} EIGEN_ALIGN16;                    
+
+POINT_CLOUD_REGISTER_POINT_STRUCT (PointXYZIRPYT,
+                                   (float, x, x) (float, y, y)
+                                   (float, z, z) (float, intensity, intensity)
+                                   (float, roll, roll) (float, pitch, pitch) (float, yaw, yaw)
+                                   (double, time, time))
+
+typedef PointXYZIRPYT  PointTypePose;
+
 class Preprocess
 {
   public:
@@ -94,7 +134,7 @@ class Preprocess
   PointCloudXYZI pl_full, pl_corn, pl_surf;
   PointCloudXYZI pl_buff[128]; //maximum 128 line lidar
   vector<orgtype> typess[128]; //maximum 128 line lidar
-  int lidar_type, point_filter_num, N_SCANS;;
+  int lidar_type, point_filter_num, N_SCANS, SCAN_RATE;
   double blind;
   bool feature_enabled, given_offset_time;
   ros::Publisher pub_full, pub_surf, pub_corn;
@@ -104,6 +144,7 @@ class Preprocess
   void avia_handler(const livox_ros_driver::CustomMsg::ConstPtr &msg);
   void oust64_handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
   void velodyne_handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
+  void rs_handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
   void velodyne_sim_handler(const sensor_msgs::PointCloud2::ConstPtr &msg);
   void give_feature(PointCloudXYZI &pl, vector<orgtype> &types);
   void pub_func(PointCloudXYZI &pl, const ros::Time &ct);
