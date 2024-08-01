@@ -14,7 +14,7 @@ mapping:
     gyr_cov: 0.1
     b_acc_cov: 0.0001
     b_gyr_cov: 0.0001
-    gps_cov: 0.01                   #! Check if GPS covariance is needed
+    gps_cov: 0.01                  
     fov_degree:    180
     det_range:     260.0
     extrinsic_T: [ -0.011, -0.02329, 0.04412 ] # Lidar center w/r/t IMU
@@ -26,10 +26,10 @@ publish:
     scan_publish_en:  true       # 'false' will close all the point cloud output
     dense_publish_en: true       # false will low down the points number in a global-frame point clouds scan.
     scan_bodyframe_pub_en: true  # output the point cloud scans in IMU-body-frame
-    gps_publish_en: true         #! Do we want to control GPS data publication?
+    gps_publish_en: true         
 
 # GPS Settings
     useImuHeadingInitialization: false           # if using GPS data, set to "true"
     useGpsElevation: false                      # if GPS elevation is bad, set to "false"
     gpsCovThreshold: 2.0                        # m^2, threshold for using GPS data
-    poseCovThreshold: 0 #25.0                      # m^2, threshold for using GPS data  位姿协方差阈值 from isam2
+    poseCovThreshold: 0 #25.0                      # m^2, threshold for using GPS data  pose covariance threshold from isam2

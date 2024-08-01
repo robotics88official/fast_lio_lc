@@ -986,14 +986,14 @@ void Preprocess::rs_handler(const sensor_msgs::PointCloud2_<allocator<void>>::Co
     else
     {
         given_offset_time = false;
-        double yaw_first = atan2(pl_orig.points[0].y, pl_orig.points[0].x) * 57.29578; // 记录第一个点(index 0)的yaw， to degree
+        double yaw_first = atan2(pl_orig.points[0].y, pl_orig.points[0].x) * 57.29578; // Record the yaw of the first point (index 0)， to degree
         double yaw_end  = yaw_first;
-        int layer_first = pl_orig.points[0].ring; // 第一个点(index 0)的layer序号
-        for (uint i = plsize - 1; i > 0; i--) // 倒序遍历，找到与第一个点相同layer的最后一个点
+        int layer_first = pl_orig.points[0].ring; // The layer number of the first point (index 0)
+        for (uint i = plsize - 1; i > 0; i--) // Traverse in reverse order and find the last point in the same layer as the first point
         {
           if (pl_orig.points[i].ring == layer_first)
             {
-                yaw_end = atan2(pl_orig.points[i].y, pl_orig.points[i].x) * 57.29578;// 与第一个点相同layer的最后一个点的yaw
+                yaw_end = atan2(pl_orig.points[i].y, pl_orig.points[i].x) * 57.29578;// The yaw of the last point in the same layer as the first point
                 break;
             }
         }
@@ -1007,7 +1007,7 @@ void Preprocess::rs_handler(const sensor_msgs::PointCloud2_<allocator<void>>::Co
           pl_buff[i].reserve(plsize);
       }
 
-      //计算时间、转换点云格式为PointType，正序遍历
+      //Calculation time, converting point cloud format to PointType, forward traversal
       for (int i = 0; i < plsize; i++)
       {
           PointType added_pt;
@@ -1024,14 +1024,14 @@ void Preprocess::rs_handler(const sensor_msgs::PointCloud2_<allocator<void>>::Co
 
           if (!given_offset_time)
           {
-            double yaw_angle = atan2(added_pt.y, added_pt.x) * 57.2957; // 但前点yaw, to degree
-                if (is_first[layer]) // 如果当前点是其对应layer的第一个点
+            double yaw_angle = atan2(added_pt.y, added_pt.x) * 57.2957; // But click yaw before, to degree
+                if (is_first[layer]) // If the current point is the first point of its corresponding layer
                 {
                     // printf("layer: %d; is first: %d", layer, is_first[layer]);
-                    yaw_fp[layer]=yaw_angle; // 记录为当前点对应layer的起始yaw
+                    yaw_fp[layer]=yaw_angle; // Recorded as the starting yaw of the layer corresponding to the current point
                     is_first[layer]=false;
-                    added_pt.curvature = 0.0; //当前点curvature（时间）置零
-                    yaw_last[layer]=yaw_angle; // 暂时记录为当前点对应layer的结束yaw
+                    added_pt.curvature = 0.0; //The current point curve (time) is set to zero
+                    yaw_last[layer]=yaw_angle; // Temporarily recorded as the end yaw of the layer corresponding to the current point
                     time_last[layer]=added_pt.curvature;
                     continue;
                 }
@@ -1047,8 +1047,8 @@ void Preprocess::rs_handler(const sensor_msgs::PointCloud2_<allocator<void>>::Co
 
                 if (added_pt.curvature < time_last[layer])  added_pt.curvature+=360.0/omega_l;
 
-                yaw_last[layer] = yaw_angle; // 记录当前layer最后一个点的yaw
-                time_last[layer]=added_pt.curvature; //  记录当前layer最后一个点的时间
+                yaw_last[layer] = yaw_angle; // Record the yaw of the last point of the current layer
+                time_last[layer]=added_pt.curvature; //  Record the time of the last point of the current layer
             }
 
             pl_buff[layer].points.push_back(added_pt);
@@ -1059,7 +1059,7 @@ void Preprocess::rs_handler(const sensor_msgs::PointCloud2_<allocator<void>>::Co
             PointCloudXYZI &pl = pl_buff[j]; // points_line
             int linesize = pl.size();
             if (linesize < 2) continue;
-            vector<orgtype> &types = typess[j]; //用于记录当前扫描线上每个点的参数
+            vector<orgtype> &types = typess[j]; //Used to record the parameters of each point on the current scan line
             types.clear();
             types.resize(linesize);
             linesize--;
