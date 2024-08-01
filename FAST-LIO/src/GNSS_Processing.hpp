@@ -87,7 +87,7 @@ GnssProcess::GnssProcess()
 
 GnssProcess::~GnssProcess() {}
 
-// Initialize the origin, WGS84 -> ENU ??? The debugging result seems to be NED North East
+//! Initialize the origin, WGS84 -> ENU ??? The debugging result seems to be NED North East
 void GnssProcess::InitOriginPosition(double latitude, double longitude, double altitude)
 {
     geo_converter.Reset(latitude, longitude, altitude);
