@@ -114,10 +114,6 @@
 #include "GNSS_Processing.hpp"
 #include "sensor_msgs/NavSatFix.h"
 
-// save map
-#include "fast_lio_lc/save_map.h"
-#include "fast_lio_lc/save_pose.h"
-
 // save data in kitti format 
 #include <sstream>
 #include <fstream>
@@ -316,6 +312,7 @@ int updateKdtreeCount = 0 ;        //  Updated every 100 times
 bool visulize_IkdtreeMap = false;            //  visual iktree submap
 
 // gnss
+bool use_gps;
 double last_timestamp_gnss = -1.0 ;
 deque<nav_msgs::Odometry> gnss_buffer;
 geometry_msgs::PoseStamped msg_gnss_pose;
@@ -1596,7 +1593,7 @@ void publish_effect_world(const ros::Publisher & pubLaserCloudEffect)
 
 void publish_map(const ros::Publisher & pubLaserCloudMap)
 {
-    cout << "publish map\n";
+    // cout << "publish map\n";
     sensor_msgs::PointCloud2 laserCloudMap;
     pcl::toROSMsg(*featsFromMap, laserCloudMap);
     laserCloudMap.header.stamp = ros::Time().fromSec(lidar_end_time);
@@ -1836,132 +1833,6 @@ void h_share_model(state_ikfom &s, esekfom::dyn_share_datastruct<double> &ekfom_
         ekfom_data.h(i) = -norm_p.intensity;
     }
     solve_time += omp_get_wtime() - solve_start_;
-}
-
-bool savePoseService(fast_lio_lc::save_poseRequest& req, fast_lio_lc::save_poseResponse& res)
-{
-    pose pose_gnss ;
-    pose pose_optimized ;
-    pose pose_without_optimized ;
-
-    std::ofstream  file_pose_gnss ;
-    std::ofstream  file_pose_optimized ;
-    std::ofstream  file_pose_without_optimized ;
-
-    string savePoseDirectory;
-    cout << "****************************************************" << endl;
-    cout << "Saving poses to pose files ..." << endl;
-    if(req.destination.empty()) savePoseDirectory = std::getenv("HOME") + savePCDDirectory;
-    else savePoseDirectory = std::getenv("HOME") + req.destination;
-    cout << "Save destination: " << savePoseDirectory << endl;
-
-    // create file 
-    // CreateFile(file_pose_gnss, savePoseDirectory + "/gnss_pose.txt");
-    // CreateFile(file_pose_optimized, savePoseDirectory + "/optimized_pose.txt");
-    // CreateFile(file_pose_without_optimized, savePoseDirectory + "/without_optimized_pose.txt");
-
-    //  save optimize data
-    for(int i = 0; i  < cloudKeyPoses6D->size(); i++){  
-        pose_optimized.t =  Eigen::Vector3d(cloudKeyPoses6D->points[i].x, cloudKeyPoses6D->points[i].y, cloudKeyPoses6D->points[i].z  );
-        pose_optimized.R = Exp(double(cloudKeyPoses6D->points[i].roll), double(cloudKeyPoses6D->points[i].pitch), double(cloudKeyPoses6D->points[i].yaw) );
-        // WriteText(file_pose_optimized, pose_optimized);
-    }
-    cout << "Sucess global optimized  poses to pose files ..." << endl;
-
-    for(int i = 0; i  < fastlio_unoptimized_cloudKeyPoses6D->size(); i++){  
-        pose_without_optimized.t =  Eigen::Vector3d(fastlio_unoptimized_cloudKeyPoses6D->points[i].x, fastlio_unoptimized_cloudKeyPoses6D->points[i].y, fastlio_unoptimized_cloudKeyPoses6D->points[i].z  );
-        pose_without_optimized.R = Exp(double(fastlio_unoptimized_cloudKeyPoses6D->points[i].roll), double(fastlio_unoptimized_cloudKeyPoses6D->points[i].pitch), double(fastlio_unoptimized_cloudKeyPoses6D->points[i].yaw) );
-        // WriteText(file_pose_without_optimized, pose_without_optimized);
-    }
-    cout << "Sucess unoptimized  poses to pose files ..." << endl;
-
-    for(int i = 0; i  < gnss_cloudKeyPoses6D->size(); i++){  
-        pose_gnss.t =  Eigen::Vector3d(gnss_cloudKeyPoses6D->points[i].x, gnss_cloudKeyPoses6D->points[i].y, gnss_cloudKeyPoses6D->points[i].z  );
-        pose_gnss.R = Exp(double(gnss_cloudKeyPoses6D->points[i].roll), double(gnss_cloudKeyPoses6D->points[i].pitch), double(gnss_cloudKeyPoses6D->points[i].yaw) );
-        // WriteText(file_pose_gnss, pose_gnss);
-    }
-    cout << "Sucess gnss  poses to pose files ..." << endl;
-
-    file_pose_gnss.close();
-    file_pose_optimized.close();
-    file_pose_without_optimized.close();
-    return true  ;
-}
-
-/**
- * Save global keyframe feature point collection
-*/
-bool saveMapService(fast_lio_lc::save_mapRequest& req, fast_lio_lc::save_mapResponse& res)
-{
-    string saveMapDirectory;
-
-    cout << "****************************************************" << endl;
-    cout << "Saving map to pcd files ..." << endl;
-    if(req.destination.empty()) saveMapDirectory = std::getenv("HOME") + savePCDDirectory;
-    else saveMapDirectory = std::getenv("HOME") + req.destination;
-    cout << "Save destination: " << saveMapDirectory << endl;
-    // This code is so confusing! ! Comment out
-    //   int unused = system((std::string("exec rm -r ") + saveMapDirectory).c_str());
-    //   unused = system((std::string("mkdir -p ") + saveMapDirectory).c_str());
-    // Save historical keyframe poses
-    pcl::io::savePCDFileBinary(saveMapDirectory + "/trajectory.pcd", *cloudKeyPoses3D);                    // Keyframe position
-    pcl::io::savePCDFileBinary(saveMapDirectory + "/transformations.pcd", *cloudKeyPoses6D);      // Key frame pose
-    // Extract historical keyframe corner points and plane point collections
-    //   pcl::PointCloud<PointType>::Ptr globalCornerCloud(new pcl::PointCloud<PointType>());
-    //   pcl::PointCloud<PointType>::Ptr globalCornerCloudDS(new pcl::PointCloud<PointType>());
-    pcl::PointCloud<PointType>::Ptr globalSurfCloud(new pcl::PointCloud<PointType>());
-    pcl::PointCloud<PointType>::Ptr globalSurfCloudDS(new pcl::PointCloud<PointType>());
-    pcl::PointCloud<PointType>::Ptr globalMapCloud(new pcl::PointCloud<PointType>());
-
-    // Note: When splicing the map, the keyframe is in the lidar system, and the cloudKeyPoses6D keyframe pose saved after fastlio update is in the body system, so it needs to be
-    //cloudKeyPoses6D  Convert to T_world_lidar 。 T_world_lidar = T_world_body * T_body_lidar , T_body_lidar
-    for (int i = 0; i < (int)cloudKeyPoses6D->size(); i++) {
-        //   *globalCornerCloud += *transformPointCloud(cornerCloudKeyFrames[i],  &cloudKeyPoses6D->points[i]);
-        *globalSurfCloud   += *transformPointCloud(surfCloudKeyFrames[i],    &cloudKeyPoses6D->points[i]);
-        cout << "\r" << std::flush << "Processing feature cloud " << i << " of " << cloudKeyPoses6D->size() << " ...";
-    }
-
-    if(req.resolution != 0)
-    {
-    cout << "\n\nSave resolution: " << req.resolution << endl;
-
-    // 降采样
-    // downSizeFilterCorner.setInputCloud(globalCornerCloud);
-    // downSizeFilterCorner.setLeafSize(req.resolution, req.resolution, req.resolution);
-    // downSizeFilterCorner.filter(*globalCornerCloudDS);
-    // pcl::io::savePCDFileBinary(saveMapDirectory + "/CornerMap.pcd", *globalCornerCloudDS);
-    // 降采样
-    downSizeFilterSurf.setInputCloud(globalSurfCloud);
-    downSizeFilterSurf.setLeafSize(req.resolution, req.resolution, req.resolution);
-    downSizeFilterSurf.filter(*globalSurfCloudDS);
-    pcl::io::savePCDFileBinary(saveMapDirectory + "/SurfMap.pcd", *globalSurfCloudDS);
-    }
-    else
-    {
-    //   downSizeFilterCorner.setLeafSize(mappingCornerLeafSize, mappingCornerLeafSize, mappingCornerLeafSize);
-        downSizeFilterSurf.setInputCloud(globalSurfCloud);
-        downSizeFilterSurf.setLeafSize(mappingSurfLeafSize, mappingSurfLeafSize, mappingSurfLeafSize);
-        downSizeFilterSurf.filter(*globalSurfCloudDS);
-    // pcl::io::savePCDFileBinary(saveMapDirectory + "/CornerMap.pcd", *globalCornerCloud);       
-    // pcl::io::savePCDFileBinary(saveMapDirectory + "/SurfMap.pcd", *globalSurfCloud);           //  Dense point cloud map
-    }
-
-    // Save together, global keyframe feature point collection
-    //   *globalMapCloud += *globalCornerCloud;
-    *globalMapCloud += *globalSurfCloud;
-    pcl::io::savePCDFileBinary(saveMapDirectory + "/filterGlobalMap.pcd", *globalSurfCloudDS);       //  Filtered map
-    int ret = pcl::io::savePCDFileBinary(saveMapDirectory + "/GlobalMap.pcd", *globalMapCloud);       //  dense map
-    res.success = ret == 0;
-
-    cout << "****************************************************" << endl;
-    cout << "Saving map to pcd files completed\n" << endl;
-
-    // visial optimize global map on viz
-    ros::Time timeLaserInfoStamp = ros::Time().fromSec(lidar_end_time);
-    string odometryFrame = slam_map_frame;
-    publishCloud(&pubOptimizedGlobalMap, globalSurfCloudDS, timeLaserInfoStamp, odometryFrame);
-
-    return true;
 }
 
 /**
@@ -2302,7 +2173,8 @@ int main(int argc, char **argv)
     nh.param<float>("historyKeyframeFitnessScore", historyKeyframeFitnessScore, 0.3);
 
     // gnss
-    nh.param<string>("gnss_topic", gnss_topic,"/mavros/global_position/global"); //! change this to /gps/fix
+    nh.param<string>("gnss_topic", gnss_topic,"/gps/fix");
+    nh.param<bool>("use_gps", use_gps, false);
     nh.param<vector<double>>("mapping/extrinR_Gnss2Lidar", extrinR_Gnss2Lidar, vector<double>());
     nh.param<vector<double>>("mapping/extrinT_Gnss2Lidar", extrinT_Gnss2Lidar, vector<double>());
     nh.param<bool>("useImuHeadingInitialization", useImuHeadingInitialization, false);
@@ -2436,12 +2308,6 @@ int main(int argc, char **argv)
 
     // gnss
     ros::Subscriber sub_gnss = nh.subscribe(gnss_topic, 200000, gnss_cbk);
-    
-    // saveMap  Publish map preservation service
-    // srvSaveMap  = nh.advertiseService("/save_map" ,  &saveMapService);
-
-    // savePose  Publish track preservation service
-    // srvSavePose  = nh.advertiseService("/save_pose" ,  &savePoseService);
 
     // Loopback detection thread
     std::thread loopthread(&loopClosureThread);

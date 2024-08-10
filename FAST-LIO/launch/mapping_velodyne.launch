@@ -5,21 +5,23 @@
     <arg name="slam_map_frame" default="slam_map"/>
     <arg name="base_frame" default="base_link"/>
     <arg name="slam_pose_topic" default="/decco/pose"/>
+    <arg name="gnss_topic" default="/mavros/global_position/global"/>
 
+	  <arg name="use_gps" default="false"/>
     <arg name="lc_enable" default="true"/>
     <arg name="rviz" default="true" />
 
     <rosparam command="load" file="$(find fast_lio_lc)/config/velodyne16.yaml" />
 
-    <!-- 调参说明：  -->
-    <!-- point_filter_num，和filter_size_surf是滤波参数，越小前端效果越好，但运行越慢 -->
+    <!-- Parameter adjustment instructions:  -->
+    <!-- point_filter_num, and filter_size_surf are filter parameters. The smaller the value, the better the front-end effect, but the slower the operation. -->
     <param name="feature_extract_enable" type="bool" value="0"/>
     <param name="point_filter_num" type="int" value="4"/>
     <param name="max_iteration" type="int" value="3" />
     <param name="scan_publish_enable" type="bool" value="1" />
 	  <param name="dense_publish_enable" type="bool" value="1" />
-    <param name="filter_size_surf" type="double" value="0.5" />   <!-- 对当前点云的filter -->
-    <param name="filter_size_map" type="double" value="0.2" />    <!-- 对地图的filter -->
+    <param name="filter_size_surf" type="double" value="0.5" />   <!-- Filter for the current point cloud -->
+    <param name="filter_size_map" type="double" value="0.2" />    <!-- Filter on the map -->
     <param name="cube_side_length" type="double" value="1000" />
     <param name="debug_mode_enable" type="bool" value="0" />
     <param name="pcd_save_enable" type="bool" value="0" />
@@ -28,9 +30,9 @@
     <param name="visulize_map" value="true"/>
 
     <!--optimization  -->
-    <param name="recontructKdTree" value="$(arg lc_enable)"/> <!-- 打开更新ikdtree -->
-    <param name="updateState" value="$(arg lc_enable)"/>   <!-- 打开更新状态 -->
-    <param name="updateFrequency" value="30"/> <!-- 每接受updateFrequency个点云，更新一次， 不能太大-->
+    <param name="recontructKdTree" value="$(arg lc_enable)"/> <!-- Open update ikdtree -->
+    <param name="updateState" value="$(arg lc_enable)"/>   <!-- Open update status -->
+    <param name="updateFrequency" value="30"/> <!-- Each time updateFrequency point clouds are accepted, it is updated once. Not too big-->
     
     <node pkg="fast_lio_lc" type="fastlio_mapping" name="laserMapping" output="screen" respawn="true">
       <param name="imu_topic" type="string" value="$(arg imu_topic)"/>
@@ -38,6 +40,8 @@
       <param name="base_frame" type="string" value="$(arg base_frame)"/>
       <param name="slam_pose_topic" type="string" value="$(arg slam_pose_topic)"/>
       <param name="frame_id" type="string" value="base_link"/>
+      <param name="gnss_topic" type="string" value="$(arg gnss_topic)"/>
+		  <param name="use_gps" type="bool" value="$(arg use_gps)"/>
     </node> 
 
     <group if="$(arg rviz)">
