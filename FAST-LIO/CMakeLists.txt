@@ -75,7 +75,7 @@ include_directories(
   ${GeographicLib_INCLUDE_DIRS}
   include)
 
-add_message_files(
+add_message_files( 
   FILES
   Pose6D.msg
 )
@@ -99,4 +99,3 @@ add_dependencies(fastlio_mapping ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EX
 
 add_library(ikd_Tree include/ikd-Tree/ikd_Tree.cpp)
 add_library(preprocess  src/preprocess.cpp)
-# add_executable(fastlio_sam_mapping src/laserMapping.cpp)

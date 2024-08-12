@@ -624,37 +624,43 @@ void addGPSFactor()
         return;
     }
     // If there are no keyframes, or the distance between the first and last keyframes is less than 5m, no GPS factor is added.
-    if ((cloudKeyPoses3D->points.empty()) || (pointDistance(cloudKeyPoses3D->front(), cloudKeyPoses3D->back()) < 0.5)) {
+    if ((cloudKeyPoses3D->points.empty()) || (pointDistance(cloudKeyPoses3D->front(), cloudKeyPoses3D->back()) < 5.0)) {
+        // cout << "5m thingy\n";
         return;
     }
     // The pose covariance is very small, so there is no need to add GPS data for correction.
     if (poseCovariance(3,3) < poseCovThreshold && poseCovariance(4,4) < poseCovThreshold) {
-        cout << "Pose cov very small\n";
+        // cout << "Pose cov very small\n";
         // return;
     }
     static PointType lastGPSPoint;      // latest gps data
     while (!gnss_buffer.empty())
     {
         // Delete the odometer 0.2s before the current frame
-        if (gnss_buffer.front().header.stamp.toSec() < lidar_end_time - 0.05)
-        {
-            gnss_buffer.pop_front();
-        }
+        // if (gnss_buffer.front().header.stamp.toSec() < lidar_end_time - 0.05) //! this needs to be uncommented? confirm
+        // {
+        //     cout << "deleting odom 0.2s\n";
+        //     gnss_buffer.pop_front();
+        // }
         // Exit after 0.2s exceeding the current frame
-        else if (gnss_buffer.front().header.stamp.toSec() > lidar_end_time + 0.05)
+        if (gnss_buffer.front().header.stamp.toSec() > lidar_end_time + 0.05)
         {
+            // cout << "Exit after 0.2s exceeding the current frame\n";
             break;
         }
         else
         {
+            // cout << "while loop else statement\n";
             nav_msgs::Odometry thisGPS = gnss_buffer.front();
             gnss_buffer.pop_front();
             // GPS noise covariance is too large to be used
             float noise_x = thisGPS.pose.covariance[0];         //  x direction covariance
             float noise_y = thisGPS.pose.covariance[7];
             float noise_z = thisGPS.pose.covariance[14];      //   z direction covariance
-            if (noise_x > gpsCovThreshold || noise_y > gpsCovThreshold)
+            if (noise_x > gpsCovThreshold || noise_y > gpsCovThreshold) {
+                // cout << "noise prob\n";
                 continue;
+            }
             // GPS odometer location
             float gps_x = thisGPS.pose.pose.position.x;
             float gps_y = thisGPS.pose.pose.position.y;
@@ -666,19 +672,24 @@ void addGPSFactor()
             }
 
             // (0,0,0) Invalid data
-            if (abs(gps_x) < 1e-6 && abs(gps_y) < 1e-6)
+            if (abs(gps_x) < 1e-6 && abs(gps_y) < 1e-6) {
+                // cout << "invalid data\n";
                 continue;
+            }
             // Add a GPS odometer every 5m
             PointType curGPSPoint;
             curGPSPoint.x = gps_x;
             curGPSPoint.y = gps_y;
             curGPSPoint.z = gps_z;
-            if (pointDistance(curGPSPoint, lastGPSPoint) < 5.0)
+            if (pointDistance(curGPSPoint, lastGPSPoint) < 5.0) {
+                // cout << "pnt dist < 5\n";
                 continue;
+            }
             else
                 lastGPSPoint = curGPSPoint;
             // Add GPS factor
             gtsam::Vector Vector3(3);
+            // cout << "adding gps factor finally\n";
             Vector3 << max(noise_x, 1.0f), max(noise_y, 1.0f), max(noise_z, 1.0f);
             gtsam::noiseModel::Diagonal::shared_ptr gps_noise = gtsam::noiseModel::Diagonal::Variances(Vector3);
             gtsam::GPSFactor gps_factor(cloudKeyPoses3D->size(), gtsam::Point3(gps_x, gps_y, gps_z), gps_noise);
@@ -1386,7 +1397,7 @@ bool sync_packages(MeasureGroup &meas)
     /*** push a lidar scan ***/
     if (!lidar_pushed)
     {
-        meas.lidar = lidar_buffer.front();         // The lidar pointer points to the oldest lidar data
+        meas.lidar = lidar_buffer.front();         // The lidar pointer points to the oldest lidar datalidar_end_time
         meas.lidar_beg_time = time_buffer.front(); // record earliest time
 
         // Update end time
