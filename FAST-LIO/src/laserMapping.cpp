@@ -624,8 +624,8 @@ void addGPSFactor()
         return;
     }
     // If there are no keyframes, or the distance between the first and last keyframes is less than 5m, no GPS factor is added.
-    if ((cloudKeyPoses3D->points.empty()) || (pointDistance(cloudKeyPoses3D->front(), cloudKeyPoses3D->back()) < 5.0)) {
-        // cout << "5m thingy\n";
+    if ((cloudKeyPoses3D->points.empty()) || (pointDistance(cloudKeyPoses3D->front(), cloudKeyPoses3D->back()) < 3.0)) {
+        cout << "5m thingy\n";
         return;
     }
     // The pose covariance is very small, so there is no need to add GPS data for correction.
@@ -637,15 +637,18 @@ void addGPSFactor()
     while (!gnss_buffer.empty())
     {
         // Delete the odometer 0.2s before the current frame
-        // if (gnss_buffer.front().header.stamp.toSec() < lidar_end_time - 0.05) //! this needs to be uncommented? confirm
-        // {
-        //     cout << "deleting odom 0.2s\n";
-        //     gnss_buffer.pop_front();
-        // }
-        // Exit after 0.2s exceeding the current frame
-        if (gnss_buffer.front().header.stamp.toSec() > lidar_end_time + 0.05)
+        if (gnss_buffer.front().header.stamp.toSec() < lidar_end_time - 0.3) //! this needs to be uncommented? confirm
         {
-            // cout << "Exit after 0.2s exceeding the current frame\n";
+            std::cout << std::fixed << std::setprecision(9);
+            // cout << "deleting odom 0.2s, gnss front time: " << gnss_buffer.front().header.stamp.toSec() << ", lidar time: " << lidar_end_time << endl;
+            // cout << "gnss end time: " << gnss_buffer.back().header.stamp.toSec() << endl;
+            cout << "gnss buffer len: " << gnss_buffer.size() << endl;
+            gnss_buffer.pop_front();
+        }
+        // Exit after 0.2s exceeding the current frame
+        else if (gnss_buffer.front().header.stamp.toSec() > lidar_end_time + 0.3)
+        {
+            cout << "Exit after 0.2s exceeding the current frame\n";
             break;
         }
         else
@@ -658,14 +661,15 @@ void addGPSFactor()
             float noise_y = thisGPS.pose.covariance[7];
             float noise_z = thisGPS.pose.covariance[14];      //   z direction covariance
             if (noise_x > gpsCovThreshold || noise_y > gpsCovThreshold) {
-                // cout << "noise prob\n";
+                cout << "noise prob\n";
                 continue;
             }
             // GPS odometer location
             float gps_x = thisGPS.pose.pose.position.x;
             float gps_y = thisGPS.pose.pose.position.y;
             float gps_z = thisGPS.pose.pose.position.z;
-            if (!useGpsElevation)           //  Whether to use gps altitude
+            // if (!useGpsElevation)           //  Whether to use gps altitude
+            if(true)
             {
                 gps_z = transformTobeMapped[5];
                 noise_z = 0.01;
@@ -673,7 +677,7 @@ void addGPSFactor()
 
             // (0,0,0) Invalid data
             if (abs(gps_x) < 1e-6 && abs(gps_y) < 1e-6) {
-                // cout << "invalid data\n";
+                cout << "invalid data\n";
                 continue;
             }
             // Add a GPS odometer every 5m
@@ -681,15 +685,15 @@ void addGPSFactor()
             curGPSPoint.x = gps_x;
             curGPSPoint.y = gps_y;
             curGPSPoint.z = gps_z;
-            if (pointDistance(curGPSPoint, lastGPSPoint) < 5.0) {
-                // cout << "pnt dist < 5\n";
+            if (pointDistance(curGPSPoint, lastGPSPoint) < 3.0) {
+                cout << "pnt dist < 5\n";
                 continue;
             }
             else
                 lastGPSPoint = curGPSPoint;
             // Add GPS factor
             gtsam::Vector Vector3(3);
-            // cout << "adding gps factor finally\n";
+            cout << "adding gps factor finally\n";
             Vector3 << max(noise_x, 1.0f), max(noise_y, 1.0f), max(noise_z, 1.0f);
             gtsam::noiseModel::Diagonal::shared_ptr gps_noise = gtsam::noiseModel::Diagonal::Variances(Vector3);
             gtsam::GPSFactor gps_factor(cloudKeyPoses3D->size(), gtsam::Point3(gps_x, gps_y, gps_z), gps_noise);
@@ -713,7 +717,7 @@ void saveKeyFramesAndFactor()
     // GPS factors (UTM -> WGS84)
     addGPSFactor();
     // Loop closing factor (rs-loop-detect) detection based on Euclidean distance
-    addLoopFactor();
+    // addLoopFactor();
     // Perform optimization
     isam->update(gtSAMgraph, initialEstimate);
     isam->update();
@@ -1301,9 +1305,9 @@ void imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in)
 
 void gnss_cbk(const sensor_msgs::NavSatFixConstPtr& msg_in)
 {
-    // cout << "gnss cbk\n";
     //  ROS_INFO("GNSS DATA IN ");
     double timestamp = msg_in->header.stamp.toSec();
+    // cout << "gnss cbk timestamp: " << timestamp << endl;
 
     mtx_buffer.lock();
 
@@ -1327,7 +1331,7 @@ void gnss_cbk(const sensor_msgs::NavSatFixConstPtr& msg_in)
     mtx_buffer.unlock();
    
     if(!gnss_inited){           //  initialization location
-        gnss_data.InitOriginPosition(msg_in->latitude, msg_in->longitude, msg_in->altitude) ; 
+        gnss_data.InitOriginPosition(msg_in->latitude, msg_in->longitude, msg_in->altitude) ;
         gnss_inited = true ;
         cout << "gnss inited\n";
     }else{                               //   loading finished
@@ -1337,10 +1341,12 @@ void gnss_cbk(const sensor_msgs::NavSatFixConstPtr& msg_in)
         gnss_pose(0,3) = gnss_data.local_N ;                 //    north
         gnss_pose(1,3) = gnss_data.local_E ;                 //     East
         gnss_pose(2,3) = -gnss_data.local_U ;                 //    ground
+        // cout << "gnss data(lat, long, alt): " << gnss_pose << endl;
 
         Eigen::Isometry3d gnss_to_lidar(Gnss_R_wrt_Lidar) ;
         gnss_to_lidar.pretranslate(Gnss_T_wrt_Lidar);
         gnss_pose  =  gnss_to_lidar  *  gnss_pose ;                    //  gnss is transferred to the lidar system, (the current Gnss_T_wrt_Lidar is just a rough initial value)
+        // cout << "gnss pose: " << gnss_pose << endl;
 
         nav_msgs::Odometry gnss_data_enu ;
         // add new message to buffer:
@@ -1358,7 +1364,6 @@ void gnss_cbk(const sensor_msgs::NavSatFixConstPtr& msg_in)
         gnss_data_enu.pose.covariance[7] = gnss_data.pose_cov[1] ;
         gnss_data_enu.pose.covariance[14] = gnss_data.pose_cov[2] ;
 
-        // cout << "pushing data in gnss\n";
         gnss_buffer.push_back(gnss_data_enu);
 
         // visial gnss path in rviz:
@@ -2002,7 +2007,6 @@ int main(int argc, char **argv)
     downSizeFilterICP.setLeafSize(mappingSurfLeafSize, mappingSurfLeafSize, mappingSurfLeafSize);
     downSizeFilterSurroundingKeyPoses.setLeafSize(surroundingKeyframeDensity, surroundingKeyframeDensity, surroundingKeyframeDensity); // for surrounding key poses of scan-to-map optimization
 
-    // ISAM2参数
     gtsam::ISAM2Params parameters;
     parameters.relinearizeThreshold = 0.01;
     parameters.relinearizeSkip = 1;
@@ -2086,23 +2090,23 @@ int main(int argc, char **argv)
     ros::Publisher pubPathUpdate = nh.advertise<nav_msgs::Path>("/path_updated", 100000);                   //  isam updated path
     
     pubGnssPath = nh.advertise<nav_msgs::Path>("/gnss_path", 100000);
-    pubLaserCloudSurround = nh.advertise<sensor_msgs::PointCloud2>("fast_lio_sam/mapping/keyframe_submap", 1); // Publish the feature point cloud of the local keyframe map
-    pubOptimizedGlobalMap = nh.advertise<sensor_msgs::PointCloud2>("fast_lio_sam/mapping/map_global_optimized", 1); // Publish the feature point cloud of the local keyframe map
+    pubLaserCloudSurround = nh.advertise<sensor_msgs::PointCloud2>("/keyframe_submap", 1); // Publish the feature point cloud of the local keyframe map
+    pubOptimizedGlobalMap = nh.advertise<sensor_msgs::PointCloud2>("/map_global_optimized", 1); // Publish the feature point cloud of the local keyframe map
     pose_publisher = nh.advertise<geometry_msgs::PoseStamped>(slam_pose_topic, 10);
 
-    // loop clousre
-    // Publish closed-loop matching keyframe local map
-    pubHistoryKeyFrames = nh.advertise<sensor_msgs::PointCloud2>("fast_lio_sam/mapping/icp_loop_closure_history_cloud", 1);
-    // Publish the feature point cloud after the pose transformation of the current keyframe after closed-loop optimization.
-    pubIcpKeyFrames = nh.advertise<sensor_msgs::PointCloud2>("fast_lio_sam/mapping/icp_loop_closure_corrected_cloud", 1);
-    // Publish closed-loop edges, which appear as connections between closed-loop frames in rviz
-    pubLoopConstraintEdge = nh.advertise<visualization_msgs::MarkerArray>("/fast_lio_sam/mapping/loop_closure_constraints", 1);
+    // // loop clousre
+    // // Publish closed-loop matching keyframe local map
+    // pubHistoryKeyFrames = nh.advertise<sensor_msgs::PointCloud2>("/icp_loop_closure_history_cloud", 1);
+    // // Publish the feature point cloud after the pose transformation of the current keyframe after closed-loop optimization.
+    // pubIcpKeyFrames = nh.advertise<sensor_msgs::PointCloud2>("/icp_loop_closure_corrected_cloud", 1);
+    // // Publish closed-loop edges, which appear as connections between closed-loop frames in rviz
+    // pubLoopConstraintEdge = nh.advertise<visualization_msgs::MarkerArray>("/loop_closure_constraints", 1);
 
     // gnss
     ros::Subscriber sub_gnss = nh.subscribe(gnss_topic, 200000, gnss_cbk);
 
     // Loopback detection thread
-    std::thread loopthread(&loopClosureThread);
+    // std::thread loopthread(&loopClosureThread);
 
     //------------------------------------------------------------------------------------------------------
     signal(SIGINT, SigHandle);
@@ -2114,23 +2118,23 @@ int main(int argc, char **argv)
             break;
         ros::spinOnce();
 
-//         // 接收关键帧, 一直循环直到其中一个为空（理论上应该是idKeyFramesBuff先空）
+//         // Receive key frames and loop until one of them is empty (in theory, idKeyFramesBuff should be empty first)
 //         {
 //             while( !cloudBuff.empty() && !idKeyFramesBuff.empty() ){
 //                 while( idKeyFramesBuff.front() > cloudBuff.front().first )
 //                 {
 //                     cloudBuff.pop();
 //                 }
-//                 // 此时idKeyFramesBuff.front() == cloudBuff.front().first
+//                 // At this time idKeyFramesBuff.front() == cloudBuff.front().first
 //                 assert(idKeyFramesBuff.front() == cloudBuff.front().first);
 //                 idKeyFrames.push_back(idKeyFramesBuff.front());
 //                 cloudKeyFrames.push_back( cloudBuff.front().second );
 //                 idKeyFramesBuff.pop();
 //                 cloudBuff.pop();
 //             }
-//             assert(pathKeyFrames.poses.size() <= cloudKeyFrames.size() );   // 有可能id发过来了，但是节点还未更新
+//             assert(pathKeyFrames.poses.size() <= cloudKeyFrames.size() );   // It is possible that the ID has been sent, but the node has not been updated yet.
 
-//             // 记录最新关键帧的信息
+//             // Record the latest keyframe information
 //             if(pathKeyFrames.poses.size() >= 1){
 //                 lastKeyFramesId = idKeyFrames[pathKeyFrames.poses.size() - 1];
 //                 lastKeyFramesPose = pathKeyFrames.poses.back().pose;
@@ -2329,10 +2333,8 @@ int main(int argc, char **argv)
     /* 1. make sure you have enough memories
     /* 2. pcd save will largely influence the real-time performences **/
     // if (pcl_wait_save->size() > 0 && pcd_save_en)
-    cout << "going to save fileeeee!!!!!\n";
     if (pcl_wait_save->size() > 0 && true)
     {
-        cout << "saving file!!!!!!!!!!!!!!\n";
         string file_name = string("scans.pcd");
         string all_points_dir(string(string(ROOT_DIR) + "PCD/") + file_name);
         pcl::PCDWriter pcd_writer;
@@ -2363,7 +2365,7 @@ int main(int argc, char **argv)
     }
 
     startFlag = false;
-    loopthread.join(); //  Detached thread
+    // loopthread.join(); //  Detached thread
 
     return 0;
 }
