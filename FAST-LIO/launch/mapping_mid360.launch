@@ -7,7 +7,7 @@
 	<arg name="base_frame" default="base_link"/>
 	<arg name="slam_pose_topic" default="/decco/pose"/>
 	<arg name="gnss_topic" default="/mavros/global_position/global"/>
-	<arg name="use_gps" default="false"/>
+	<arg name="use_gps" default="0"/>
 
 	<rosparam command="load" file="$(find fast_lio_lc)/config/mid360.yaml" />
 
@@ -29,7 +29,7 @@
 		<param name="slam_pose_topic" type="string" value="$(arg slam_pose_topic)"/>
 		<param name="frame_id" type="string" value="base_link"/>
 		<param name="gnss_topic" type="string" value="$(arg gnss_topic)"/>
-		<param name="use_gps" type="bool" value="$(arg use_gps)"/>
+		<param name="use_gps" type="bool" value="$(eval arg('use_gps') == '1')"/>
 	</node>
 
 	<group if="$(arg rviz)">
