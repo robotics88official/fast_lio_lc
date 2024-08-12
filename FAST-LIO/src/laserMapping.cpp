@@ -388,7 +388,7 @@ pcl::PointCloud<PointType>::Ptr transformPointCloud(pcl::PointCloud<PointType>::
 
     Eigen::Isometry3d transCur = T_w_lidar;        
 
-#pragma omp parallel for num_threads(numberOfCores)
+    #pragma omp parallel for num_threads(numberOfCores)
     for (int i = 0; i < cloudSize; ++i)
     {
         const auto &pointFrom = cloudIn->points[i];
@@ -621,25 +621,18 @@ void addLoopFactor()
 void addGPSFactor()
 {
     if (gnss_buffer.empty()) {
-        cout << "gnss buffer empty\n";
         return;
     }
     // If there are no keyframes, or the distance between the first and last keyframes is less than 5m, no GPS factor is added.
-    if ((cloudKeyPoses3D->points.empty())) {
-        cout << "no keyframes\n";
-        return;
-    }
-    if ((pointDistance(cloudKeyPoses3D->front(), cloudKeyPoses3D->back()) < 0.5)) {
-        cout << "dist less than 0.5 m\n";
+    if ((cloudKeyPoses3D->points.empty()) || (pointDistance(cloudKeyPoses3D->front(), cloudKeyPoses3D->back()) < 0.5)) {
         return;
     }
     // The pose covariance is very small, so there is no need to add GPS data for correction.
     if (poseCovariance(3,3) < poseCovThreshold && poseCovariance(4,4) < poseCovThreshold) {
-        cout << "pose cov very small\n";
+        cout << "Pose cov very small\n";
         // return;
     }
     static PointType lastGPSPoint;      // latest gps data
-    cout << "going to add gps factor now \n";
     while (!gnss_buffer.empty())
     {
         // Delete the odometer 0.2s before the current frame
@@ -705,10 +698,8 @@ void saveKeyFramesAndFactor()
     if (saveFrame() == false)
         return;
     // Laser odometry factor (from fast-lio), the input is frame_relative pose inter-frame pose (under the body system)
-    cout << "adding odom factor\n";
     addOdomFactor();
     // GPS factors (UTM -> WGS84)
-    cout << "adding gps factor\n";
     addGPSFactor();
     // Loop closing factor (rs-loop-detect) detection based on Euclidean distance
     addLoopFactor();

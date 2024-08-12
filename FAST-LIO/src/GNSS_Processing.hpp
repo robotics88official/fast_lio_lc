@@ -87,6 +87,7 @@ GnssProcess::GnssProcess()
 
 GnssProcess::~GnssProcess() {}
 
+//TODO: With tilted lidar, the slam_map frame is also tilted with respect to the earth's surface. Account for that transform.
 //! Initialize the origin, WGS84 -> ENU ??? The debugging result seems to be NED North East
 void GnssProcess::InitOriginPosition(double latitude, double longitude, double altitude)
 {
