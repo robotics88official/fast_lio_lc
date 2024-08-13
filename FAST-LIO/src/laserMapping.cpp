@@ -625,7 +625,7 @@ void addGPSFactor()
     }
     // If there are no keyframes, or the distance between the first and last keyframes is less than 5m, no GPS factor is added.
     if ((cloudKeyPoses3D->points.empty()) || (pointDistance(cloudKeyPoses3D->front(), cloudKeyPoses3D->back()) < 3.0)) {
-        cout << "5m thingy\n";
+        // cout << "5m thingy\n";
         return;
     }
     // The pose covariance is very small, so there is no need to add GPS data for correction.
@@ -637,18 +637,18 @@ void addGPSFactor()
     while (!gnss_buffer.empty())
     {
         // Delete the odometer 0.2s before the current frame
-        if (gnss_buffer.front().header.stamp.toSec() < lidar_end_time - 0.3) //! this needs to be uncommented? confirm
+        if (gnss_buffer.front().header.stamp.toSec() < lidar_end_time - 0.3)
         {
             std::cout << std::fixed << std::setprecision(9);
             // cout << "deleting odom 0.2s, gnss front time: " << gnss_buffer.front().header.stamp.toSec() << ", lidar time: " << lidar_end_time << endl;
             // cout << "gnss end time: " << gnss_buffer.back().header.stamp.toSec() << endl;
-            cout << "gnss buffer len: " << gnss_buffer.size() << endl;
+            // cout << "gnss buffer len: " << gnss_buffer.size() << endl;
             gnss_buffer.pop_front();
         }
         // Exit after 0.2s exceeding the current frame
         else if (gnss_buffer.front().header.stamp.toSec() > lidar_end_time + 0.3)
         {
-            cout << "Exit after 0.2s exceeding the current frame\n";
+            // cout << "Exit after 0.2s exceeding the current frame\n";
             break;
         }
         else
@@ -661,7 +661,7 @@ void addGPSFactor()
             float noise_y = thisGPS.pose.covariance[7];
             float noise_z = thisGPS.pose.covariance[14];      //   z direction covariance
             if (noise_x > gpsCovThreshold || noise_y > gpsCovThreshold) {
-                cout << "noise prob\n";
+                // cout << "noise prob\n";
                 continue;
             }
             // GPS odometer location
@@ -677,7 +677,7 @@ void addGPSFactor()
 
             // (0,0,0) Invalid data
             if (abs(gps_x) < 1e-6 && abs(gps_y) < 1e-6) {
-                cout << "invalid data\n";
+                // cout << "invalid data\n";
                 continue;
             }
             // Add a GPS odometer every 5m
@@ -686,14 +686,14 @@ void addGPSFactor()
             curGPSPoint.y = gps_y;
             curGPSPoint.z = gps_z;
             if (pointDistance(curGPSPoint, lastGPSPoint) < 3.0) {
-                cout << "pnt dist < 5\n";
+                // cout << "pnt dist < 5\n";
                 continue;
             }
             else
                 lastGPSPoint = curGPSPoint;
             // Add GPS factor
             gtsam::Vector Vector3(3);
-            cout << "adding gps factor finally\n";
+            // cout << "adding gps factor finally\n";
             Vector3 << max(noise_x, 1.0f), max(noise_y, 1.0f), max(noise_z, 1.0f);
             gtsam::noiseModel::Diagonal::shared_ptr gps_noise = gtsam::noiseModel::Diagonal::Variances(Vector3);
             gtsam::GPSFactor gps_factor(cloudKeyPoses3D->size(), gtsam::Point3(gps_x, gps_y, gps_z), gps_noise);
@@ -717,6 +717,7 @@ void saveKeyFramesAndFactor()
     // GPS factors (UTM -> WGS84)
     addGPSFactor();
     // Loop closing factor (rs-loop-detect) detection based on Euclidean distance
+    // Need to test with LoopFactor on our dataset
     // addLoopFactor();
     // Perform optimization
     isam->update(gtSAMgraph, initialEstimate);
