@@ -2035,7 +2035,7 @@ int main(int argc, char **argv)
     memset(point_selected_surf, true, sizeof(point_selected_surf)); //repeat?
     memset(res_last, -1000.0f, sizeof(res_last));
 
-    //设置imu和lidar外参和imu参数等
+    //Set imu and lidar external parameters and imu parameters, etc.
     Lidar_T_wrt_IMU << VEC_FROM_ARRAY(extrinT);
     Lidar_R_wrt_IMU << MAT_FROM_ARRAY(extrinR);
     p_imu->set_extrinsic(Lidar_T_wrt_IMU, Lidar_R_wrt_IMU);
