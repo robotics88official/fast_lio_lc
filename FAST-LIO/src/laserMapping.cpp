@@ -661,8 +661,8 @@ void addGPSFactor()
             float noise_y = thisGPS.pose.covariance[7];
             float noise_z = thisGPS.pose.covariance[14];      //   z direction covariance
             if (noise_x > gpsCovThreshold || noise_y > gpsCovThreshold) {
-                cout << "noise prob\n";
-                continue;
+                cout << "noise prob. x: " << noise_x << ", y: " << noise_y << endl;
+                // continue;
             }
             // GPS odometer location
             float gps_x = thisGPS.pose.pose.position.x;
