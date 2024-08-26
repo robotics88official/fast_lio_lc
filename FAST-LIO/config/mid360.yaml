@@ -43,5 +43,5 @@ publish:
 # GPS Settings
     useImuHeadingInitialization: true           # if using GPS data, set to "true"
     useGpsElevation: false                      # if GPS elevation is bad, set to "false"
-    gpsCovThreshold: 2.0                        # m^2, threshold for using GPS data
-    poseCovThreshold: 0 #25.0                      # m^2, threshold for using GPS data  pose covariance threshold from isam2
+    gpsCovMaximum: 2.0                        # m^2, threshold for using GPS data
+    poseCovMaximum: 0 #25.0                      # m^2, threshold for using GPS data  pose covariance threshold from isam2

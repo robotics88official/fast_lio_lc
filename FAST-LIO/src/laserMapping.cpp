@@ -319,8 +319,8 @@ geometry_msgs::PoseStamped msg_gnss_pose;
 string gnss_topic ;
 bool useImuHeadingInitialization;   
 bool useGpsElevation;             //  Whether to use high-level GPS optimization
-float gpsCovThreshold;          //   Covariance threshold of gps direction angle and altitude difference
-float poseCovThreshold;       //  pose covariance threshold from isam2
+float gpsCovMaximum;          //   Covariance threshold of gps direction angle and altitude difference
+float poseCovMaximum;       //  pose covariance threshold from isam2
 
 M3D Gnss_R_wrt_Lidar(Eye3d) ;         // External parameters of gnss and imu
 V3D Gnss_T_wrt_Lidar(Zero3d);
@@ -624,12 +624,12 @@ void addGPSFactor()
         return;
     }
     // If there are no keyframes, or the distance between the first and last keyframes is less than 5m, no GPS factor is added.
-    if ((cloudKeyPoses3D->points.empty()) || (pointDistance(cloudKeyPoses3D->front(), cloudKeyPoses3D->back()) < 2.0)) {
-        cout << "5m thingy\n";
+    if ((cloudKeyPoses3D->points.empty()) || (pointDistance(cloudKeyPoses3D->front(), cloudKeyPoses3D->back()) < 1.0)) {
+        cout << "distance between the first and last keyframes is less than 1m\n";
         return;
     }
     // The pose covariance is very small, so there is no need to add GPS data for correction.
-    if (poseCovariance(3,3) < poseCovThreshold && poseCovariance(4,4) < poseCovThreshold) {
+    if (poseCovariance(3,3) < poseCovMaximum && poseCovariance(4,4) < poseCovMaximum) {
         // cout << "Pose cov very small\n";
         // return;
     }
@@ -660,7 +660,7 @@ void addGPSFactor()
             float noise_x = thisGPS.pose.covariance[0];         //  x direction covariance
             float noise_y = thisGPS.pose.covariance[7];
             float noise_z = thisGPS.pose.covariance[14];      //   z direction covariance
-            if (noise_x > gpsCovThreshold || noise_y > gpsCovThreshold) {
+            if (noise_x > gpsCovMaximum || noise_y > gpsCovMaximum) {
                 cout << "noise prob. x: " << noise_x << ", y: " << noise_y << endl;
                 // continue;
             }
@@ -685,8 +685,8 @@ void addGPSFactor()
             curGPSPoint.x = gps_x;
             curGPSPoint.y = gps_y;
             curGPSPoint.z = gps_z;
-            if (pointDistance(curGPSPoint, lastGPSPoint) < 2.0) {
-                cout << "pnt dist < 5\n";
+            if (pointDistance(curGPSPoint, lastGPSPoint) < 1.0) {
+                cout << "pnt dist < 1\n";
                 continue;
             }
             else
@@ -1977,8 +1977,8 @@ int main(int argc, char **argv)
     nh.param<vector<double>>("mapping/extrinT_Gnss2Lidar", extrinT_Gnss2Lidar, vector<double>());
     nh.param<bool>("useImuHeadingInitialization", useImuHeadingInitialization, false);
     nh.param<bool>("useGpsElevation", useGpsElevation, false);
-    nh.param<float>("gpsCovThreshold", gpsCovThreshold, 2.0);
-    nh.param<float>("poseCovThreshold", poseCovThreshold, 25.0);
+    nh.param<float>("gpsCovMaximum", gpsCovMaximum, 2.0);
+    nh.param<float>("poseCovMaximum", poseCovMaximum, 25.0);
 
 
     // Visualization
