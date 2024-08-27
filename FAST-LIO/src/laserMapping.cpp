@@ -624,8 +624,8 @@ void addGPSFactor()
         return;
     }
     // If there are no keyframes, or the distance between the first and last keyframes is less than 5m, no GPS factor is added.
-    if ((cloudKeyPoses3D->points.empty()) || (pointDistance(cloudKeyPoses3D->front(), cloudKeyPoses3D->back()) < 1.0)) {
-        cout << "distance between the first and last keyframes is less than 1m\n";
+    if ((cloudKeyPoses3D->points.empty()) || (pointDistance(cloudKeyPoses3D->front(), cloudKeyPoses3D->back()) < 2.0)) {
+        // cout << "distance between the first and last keyframes is less than 1m\n";
         return;
     }
     // The pose covariance is very small, so there is no need to add GPS data for correction.
@@ -648,7 +648,7 @@ void addGPSFactor()
         // Exit after 0.2s exceeding the current frame
         else if (gnss_buffer.front().header.stamp.toSec() > lidar_end_time + 0.3)
         {
-            cout << "Exit after 0.2s exceeding the current frame\n";
+            // cout << "Exit after 0.2s exceeding the current frame\n";
             break;
         }
         else
@@ -661,7 +661,7 @@ void addGPSFactor()
             float noise_y = thisGPS.pose.covariance[7];
             float noise_z = thisGPS.pose.covariance[14];      //   z direction covariance
             if (noise_x > gpsCovMaximum || noise_y > gpsCovMaximum) {
-                cout << "noise prob. x: " << noise_x << ", y: " << noise_y << endl;
+                // cout << "noise prob. x: " << noise_x << ", y: " << noise_y << endl;
                 // continue;
             }
             // GPS odometer location
@@ -685,21 +685,21 @@ void addGPSFactor()
             curGPSPoint.x = gps_x;
             curGPSPoint.y = gps_y;
             curGPSPoint.z = gps_z;
-            if (pointDistance(curGPSPoint, lastGPSPoint) < 1.0) {
-                cout << "pnt dist < 1\n";
+            if (pointDistance(curGPSPoint, lastGPSPoint) < 2.0) {
+                // cout << "pnt dist < 1\n";
                 continue;
             }
             else
                 lastGPSPoint = curGPSPoint;
             // Add GPS factor
             gtsam::Vector Vector3(3);
-            cout << "adding gps factor finally\n";
+            // cout << "adding gps factor finally\n";
             Vector3 << max(noise_x, 1.0f), max(noise_y, 1.0f), max(noise_z, 1.0f);
             gtsam::noiseModel::Diagonal::shared_ptr gps_noise = gtsam::noiseModel::Diagonal::Variances(Vector3);
             gtsam::GPSFactor gps_factor(cloudKeyPoses3D->size(), gtsam::Point3(gps_x, gps_y, gps_z), gps_noise);
             gtSAMgraph.add(gps_factor);
             aLoopIsClosed = true;
-            ROS_INFO("GPS Factor Added");
+            // ROS_INFO("GPS Factor Added");
             break;
         }
     }
@@ -840,14 +840,14 @@ void recontructIKdTree(){
         downSizeFilterGlobalMapKeyFrames.setInputCloud(subMapKeyFrames);
         downSizeFilterGlobalMapKeyFrames.filter(*subMapKeyFramesDS);
 
-        std::cout << "subMapKeyFramesDS sizes  =  "   << subMapKeyFramesDS->points.size()  << std::endl;
+        // std::cout << "subMapKeyFramesDS sizes  =  "   << subMapKeyFramesDS->points.size()  << std::endl;
         
         ikdtree.reconstruct(subMapKeyFramesDS->points);
         updateKdtreeCount = 0;
-        ROS_INFO("Reconstructed  ikdtree ");
+        // ROS_INFO("Reconstructed  ikdtree ");
         int featsFromMapNum = ikdtree.validnum();
         kdtree_size_st = ikdtree.size();
-        std::cout << "featsFromMapNum  =  "   << featsFromMapNum   <<  "\t" << " kdtree_size_st   =  "  <<  kdtree_size_st  << std::endl;
+        // std::cout << "featsFromMapNum  =  "   << featsFromMapNum   <<  "\t" << " kdtree_size_st   =  "  <<  kdtree_size_st  << std::endl;
     }
         updateKdtreeCount ++ ; 
 }
@@ -884,7 +884,7 @@ void correctPoses()
         }
         // Clear the local map, reconstruct  ikdtree submap
         recontructIKdTree();
-        ROS_INFO("ISMA2 Update");
+        // ROS_INFO("ISMA2 Update");
         aLoopIsClosed = false;
     }
 }
@@ -946,7 +946,7 @@ bool detectLoopClosureDistance(int *latestID, int *closestID)
     *latestID = loopKeyCur;
     *closestID = loopKeyPre;
 
-    ROS_INFO("Find loop clousre frame ");
+    // ROS_INFO("Find loop clousre frame ");
     return true;
 }
 
@@ -1041,7 +1041,7 @@ void performLoopClosure()
     if (icp.hasConverged() == false || icp.getFitnessScore() > historyKeyframeFitnessScore)
         return;
 
-    std::cout << "icp  success  " << std::endl;
+    // std::cout << "icp  success  " << std::endl;
 
     // Publish the feature point cloud after the pose transformation of the current keyframe after closed-loop optimization.
     if (pubIcpKeyFrames.getNumSubscribers() != 0)
@@ -1068,7 +1068,7 @@ void performLoopClosure()
     float noiseScore = icp.getFitnessScore() ; //  loop_clousre  noise from icp
     Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
     gtsam::noiseModel::Diagonal::shared_ptr constraintNoise = gtsam::noiseModel::Diagonal::Variances(Vector6);
-    std::cout << "loopNoiseQueue   =   " << noiseScore << std::endl;
+    // std::cout << "loopNoiseQueue   =   " << noiseScore << std::endl;
 
     // Add data required for loop closing factors
     mtx.lock();
@@ -1085,7 +1085,7 @@ void loopClosureThread()
 {
     if (loopClosureEnableFlag == false)
     {
-        std::cout << "loopClosureEnableFlag   ==  false " << endl;
+        // std::cout << "loopClosureEnableFlag   ==  false " << endl;
         return;
     }
 
@@ -1304,6 +1304,7 @@ void imu_cbk(const sensor_msgs::Imu::ConstPtr &msg_in)
     sig_buffer.notify_all();
 }
 
+
 void gnss_cbk(const sensor_msgs::NavSatFixConstPtr& msg_in)
 {
     //  ROS_INFO("GNSS DATA IN ");
@@ -1334,7 +1335,10 @@ void gnss_cbk(const sensor_msgs::NavSatFixConstPtr& msg_in)
     if(!gnss_inited){           //  initialization location
         gnss_data.InitOriginPosition(msg_in->latitude, msg_in->longitude, msg_in->altitude) ;
         gnss_inited = true ;
-        cout << "gnss inited\n";
+        // cout << "GNSS initialized\n";
+
+        // Set the LiDAR tilt here after initializing origin position
+        // gnss_data.setLidarTilt(lidar_roll, lidar_pitch, lidar_yaw);
     }else{                               //   loading finished
         gnss_data.UpdateXYZ(msg_in->latitude, msg_in->longitude, msg_in->altitude) ;   
 
