@@ -128,25 +128,3 @@ void GnssProcess::set_extrinsic(const V3D &transl, const M3D &rot)
   Gnss_T_wrt_Lidar = transl;
   Gnss_R_wrt_Lidar = rot;
 }
-
-// Function to create a rotation matrix from Euler angles
-M3D createRotationMatrix(double roll, double pitch, double yaw) {
-    Eigen::AngleAxisd rollAngle(roll, Eigen::Vector3d::UnitX());
-    Eigen::AngleAxisd pitchAngle(pitch, Eigen::Vector3d::UnitY());
-    Eigen::AngleAxisd yawAngle(yaw, Eigen::Vector3d::UnitZ());
-
-    Eigen::Quaternion<double> q = yawAngle * pitchAngle * rollAngle;
-    return q.matrix();
-}
-
-void GnssProcess::setLidarTilt(double roll, double pitch, double yaw)
-{
-    M3D lidarTiltRotation = createRotationMatrix(roll, pitch, yaw);
-    Gnss_R_wrt_Lidar = lidarTiltRotation * Gnss_R_wrt_Lidar;
-}
-
-void GnssProcess::set_extrinsic(const MD(4,4) &T)
-{
-  Gnss_T_wrt_Lidar = T.block<3,1>(0,3);
-  Gnss_R_wrt_Lidar = T.block<3,3>(0,0);
-}
