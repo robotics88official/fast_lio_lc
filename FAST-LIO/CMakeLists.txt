@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.8)
 project(fast_lio_lc)
 
 SET(CMAKE_BUILD_TYPE "Debug")
@@ -42,49 +42,63 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}   ${OpenMP_C_FLAGS}")
 find_package(PythonLibs REQUIRED)
 find_path(MATPLOTLIB_CPP_INCLUDE_DIRS "matplotlibcpp.h")
 
-find_package(catkin REQUIRED COMPONENTS
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(livox_ros_driver2)
+find_package(rosidl_default_generators REQUIRED)
+
+find_package(Eigen3 REQUIRED)
+find_package(PCL REQUIRED)
+
+include_directories(
+  ${EIGEN3_INCLUDE_DIR}
+  ${PCL_INCLUDE_DIRS}
+  include
+)
+
+set(msg_files
+  "msg/Pose6D.msg"
+)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  ${msg_files}
+)
+ament_export_dependencies(rosidl_default_runtime)
+
+add_executable(${PROJECT_NAME}_node
+  src/laserMapping.cpp
+  include/ikd-Tree/ikd_Tree.cpp
+  src/preprocess.cpp
+)
+
+ament_target_dependencies(${PROJECT_NAME}_node
   geometry_msgs
   nav_msgs
   sensor_msgs
-  roscpp
-  rospy
   std_msgs
   pcl_ros
-  tf
-  livox_ros_driver
-  message_generation
-  eigen_conversions
+  tf2_ros
+  livox_ros_driver2
 )
 
-find_package(Eigen3 REQUIRED)
-find_package(PCL 1.8 REQUIRED)
+target_link_libraries(${PROJECT_NAME}_node ${PCL_LIBRARIES} ${PYTHON_LIBRARIES})
+target_include_directories(${PROJECT_NAME}_node PRIVATE ${PYTHON_INCLUDE_DIRS})
 
-message(Eigen: ${EIGEN3_INCLUDE_DIR})
 
-include_directories(
-	${catkin_INCLUDE_DIRS} 
-  ${EIGEN3_INCLUDE_DIR}
-  ${PCL_INCLUDE_DIRS}
-  ${PYTHON_INCLUDE_DIRS}
-  include)
-
-add_message_files(
-  FILES
-  Pose6D.msg
+install(TARGETS ${PROJECT_NAME}_node
+  DESTINATION lib/${PROJECT_NAME}
 )
 
-generate_messages(
- DEPENDENCIES
- geometry_msgs
+install(
+  DIRECTORY config launch rviz
+  DESTINATION share/${PROJECT_NAME}
 )
 
-catkin_package(
-  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs message_runtime
-  DEPENDS EIGEN3 PCL
-  INCLUDE_DIRS
-)
-
-add_executable(fastlio_mapping src/laserMapping.cpp include/ikd-Tree/ikd_Tree.cpp src/preprocess.cpp)
-target_link_libraries(fastlio_mapping ${catkin_LIBRARIES} ${PCL_LIBRARIES} ${PYTHON_LIBRARIES})
-target_include_directories(fastlio_mapping PRIVATE ${PYTHON_INCLUDE_DIRS})
-add_dependencies(fastlio_mapping ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+ament_package()
