@@ -18,12 +18,14 @@
   
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>rosidl_default_generators</buildtool_depend>
-  
+
   <depend>rclcpp</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
+  <depend>visualization_msgs</depend>
+  <depend>tf2_eigen</depend>
   <depend>tf2_ros</depend>
   <depend>pcl_ros</depend>
   <depend>livox_ros_driver2</depend>

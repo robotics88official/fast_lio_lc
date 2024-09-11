@@ -49,7 +49,9 @@ find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 find_package(pcl_ros REQUIRED)
+find_package(tf2_eigen REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(livox_ros_driver2)
 find_package(rosidl_default_generators REQUIRED)
@@ -83,7 +85,9 @@ ament_target_dependencies(${PROJECT_NAME}_node
   nav_msgs
   sensor_msgs
   std_msgs
+  visualization_msgs
   pcl_ros
+  tf2_eigen
   tf2_ros
   livox_ros_driver2
 )
@@ -97,8 +101,10 @@ install(TARGETS ${PROJECT_NAME}_node
 )
 
 install(
-  DIRECTORY config launch rviz
+  DIRECTORY config launch rviz_cfg
   DESTINATION share/${PROJECT_NAME}
 )
+
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME}__rosidl_typesupport_cpp)
 
 ament_package()
