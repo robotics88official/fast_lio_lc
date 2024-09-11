@@ -794,87 +794,98 @@ void h_share_model(state_ikfom &s, esekfom::dyn_share_datastruct<double> &ekfom_
 int main(int argc, char** argv)
 {
     rclcpp::init(argc, argv);
-    node = rclcpp::Node::make_shared("laser_mapping");
+    node = rclcpp::Node::make_shared("fast_lio_lc");
 
     data_seq = 0;
-    node->declare_parameter("publish/scan_publish_en",scan_pub_en);
-    node->declare_parameter("publish/dense_publish_en",dense_pub_en);
-    node->declare_parameter("publish/scan_bodyframe_pub_en",scan_body_pub_en);
     node->declare_parameter("recontructKdTree",recontructKdTree);
     node->declare_parameter("updateState",updateState);
     node->declare_parameter("updateFrequency",updateFrequency);
     node->declare_parameter("max_iteration",NUM_MAX_ITERATIONS);
     node->declare_parameter("map_file_path",map_file_path);
-    node->declare_parameter("common/lid_topic",lid_topic);
-    // node->declare_parameter("common/imu_topic", imu_topic,"/livox/imu");
-    node->declare_parameter("common/keyFrame_topic", keyFrame_topic);
-    node->declare_parameter("common/keyFrame_id_topic", keyFrame_id_topic);
-    node->declare_parameter("common/time_sync_en", time_sync_en);
     node->declare_parameter("filter_size_corner",filter_size_corner_min);
     node->declare_parameter("filter_size_surf",filter_size_surf_min);
     node->declare_parameter("filter_size_map",filter_size_map_min);
     node->declare_parameter("cube_side_length",cube_len);
-    node->declare_parameter("mapping/det_range",DET_RANGE);
-    node->declare_parameter("mapping/fov_degree",fov_deg);
-    node->declare_parameter("mapping/gyr_cov",gyr_cov);
-    node->declare_parameter("mapping/acc_cov",acc_cov);
-    node->declare_parameter("mapping/b_gyr_cov",b_gyr_cov);
-    node->declare_parameter("mapping/b_acc_cov",b_acc_cov);
-    node->declare_parameter("preprocess/blind", p_pre->blind);
-    node->declare_parameter("preprocess/lidar_type", p_pre->lidar_type);
-    node->declare_parameter("preprocess/scan_line", p_pre->N_SCANS);
     node->declare_parameter("point_filter_num", p_pre->point_filter_num);
     node->declare_parameter("feature_extract_enable", p_pre->feature_enabled);
     node->declare_parameter("debug_mode_enable", debug_mode);
     node->declare_parameter("pcd_save_enable", pcd_save_en);
-    node->declare_parameter("mapping/extrinsic_T", extrinT);
-    node->declare_parameter("mapping/extrinsic_R", extrinR);
     node->declare_parameter("visulize_map", visulize_map);
 
-    // Now get params
-    node->get_parameter("publish/scan_publish_en",scan_pub_en);
-    node->get_parameter("publish/dense_publish_en",dense_pub_en);
-    node->get_parameter("publish/scan_bodyframe_pub_en",scan_body_pub_en);
+    node->declare_parameter("common.lid_topic",lid_topic);
+    // node->declare_parameter("common.imu_topic", imu_topic);
+    node->declare_parameter("common.keyFrame_topic", keyFrame_topic);
+    node->declare_parameter("common.keyFrame_id_topic", keyFrame_id_topic);
+    node->declare_parameter("common.time_sync_en", time_sync_en);
+
+    node->declare_parameter("preprocess.blind", p_pre->blind);
+    node->declare_parameter("preprocess.lidar_type", p_pre->lidar_type);
+    node->declare_parameter("preprocess.scan_line", p_pre->N_SCANS);
+
+    node->declare_parameter("mapping.det_range",DET_RANGE);
+    node->declare_parameter("mapping.fov_degree",fov_deg);
+    node->declare_parameter("mapping.gyr_cov",gyr_cov);
+    node->declare_parameter("mapping.acc_cov",acc_cov);
+    node->declare_parameter("mapping.b_gyr_cov",b_gyr_cov);
+    node->declare_parameter("mapping.b_acc_cov",b_acc_cov);
+    node->declare_parameter("mapping.extrinsic_T", extrinT);
+    node->declare_parameter("mapping.extrinsic_R", extrinR);
+
+    node->declare_parameter("publish.scan_publish_en",scan_pub_en);
+    node->declare_parameter("publish.dense_publish_en",dense_pub_en);
+    node->declare_parameter("publish.scan_bodyframe_pub_en",scan_body_pub_en);
+
+    std::string slam_pose_topic = "";
+    node->declare_parameter("imu_topic",imu_topic);
+    node->declare_parameter("slam_map_frame",slam_map_frame);
+    node->declare_parameter("base_frame",base_frame);
+    node->declare_parameter("slam_pose_topic",slam_pose_topic);
+
+    // Now, get params
     node->get_parameter("recontructKdTree",recontructKdTree);
     node->get_parameter("updateState",updateState);
     node->get_parameter("updateFrequency",updateFrequency);
     node->get_parameter("max_iteration",NUM_MAX_ITERATIONS);
     node->get_parameter("map_file_path",map_file_path);
-    node->get_parameter("common/lid_topic",lid_topic);
-    // node->get_parameter("common/imu_topic", imu_topic,"/livox/imu");
-    node->get_parameter("common/keyFrame_topic", keyFrame_topic);
-    node->get_parameter("common/keyFrame_id_topic", keyFrame_id_topic);
-    node->get_parameter("common/time_sync_en", time_sync_en);
     node->get_parameter("filter_size_corner",filter_size_corner_min);
     node->get_parameter("filter_size_surf",filter_size_surf_min);
     node->get_parameter("filter_size_map",filter_size_map_min);
     node->get_parameter("cube_side_length",cube_len);
-    node->get_parameter("mapping/det_range",DET_RANGE);
-    node->get_parameter("mapping/fov_degree",fov_deg);
-    node->get_parameter("mapping/gyr_cov",gyr_cov);
-    node->get_parameter("mapping/acc_cov",acc_cov);
-    node->get_parameter("mapping/b_gyr_cov",b_gyr_cov);
-    node->get_parameter("mapping/b_acc_cov",b_acc_cov);
-    node->get_parameter("preprocess/blind", p_pre->blind);
-    node->get_parameter("preprocess/lidar_type", p_pre->lidar_type);
-    node->get_parameter("preprocess/scan_line", p_pre->N_SCANS);
     node->get_parameter("point_filter_num", p_pre->point_filter_num);
     node->get_parameter("feature_extract_enable", p_pre->feature_enabled);
     node->get_parameter("debug_mode_enable", debug_mode);
     node->get_parameter("pcd_save_enable", pcd_save_en);
-    node->get_parameter("mapping/extrinsic_T", extrinT);
-    node->get_parameter("mapping/extrinsic_R", extrinR);
     node->get_parameter("visulize_map", visulize_map);
 
-    cout<<"p_pre->lidar_type "<<p_pre->lidar_type<<endl;
+    node->get_parameter("common.lid_topic",lid_topic);
+    // node->get_parameter("common.imu_topic", imu_topic);
+    node->get_parameter("common.keyFrame_topic", keyFrame_topic);
+    node->get_parameter("common.keyFrame_id_topic", keyFrame_id_topic);
+    node->get_parameter("common.time_sync_en", time_sync_en);
 
-    // Get IMU topic
-    std::string slam_pose_topic = "";
-    node->get_parameter("~imu_topic",imu_topic);
-    node->get_parameter("~slam_map_frame",slam_map_frame);
-    node->get_parameter("~base_frame",base_frame);
-    node->get_parameter("~slam_pose_topic",slam_pose_topic);
+    node->get_parameter("preprocess.blind", p_pre->blind);
+    node->get_parameter("preprocess.lidar_type", p_pre->lidar_type);
+    node->get_parameter("preprocess.scan_line", p_pre->N_SCANS);
 
+    node->get_parameter("mapping.det_range",DET_RANGE);
+    node->get_parameter("mapping.fov_degree",fov_deg);
+    node->get_parameter("mapping.gyr_cov",gyr_cov);
+    node->get_parameter("mapping.acc_cov",acc_cov);
+    node->get_parameter("mapping.b_gyr_cov",b_gyr_cov);
+    node->get_parameter("mapping.b_acc_cov",b_acc_cov);
+    node->get_parameter("mapping.extrinsic_T", extrinT);
+    node->get_parameter("mapping.extrinsic_R", extrinR);
+
+    node->get_parameter("publish.scan_publish_en",scan_pub_en);
+    node->get_parameter("publish.dense_publish_en",dense_pub_en);
+    node->get_parameter("publish.scan_bodyframe_pub_en",scan_body_pub_en);
+
+    node->get_parameter("imu_topic",imu_topic);
+    node->get_parameter("slam_map_frame",slam_map_frame);
+    node->get_parameter("base_frame",base_frame);
+    node->get_parameter("slam_pose_topic",slam_pose_topic);
+
+    RCLCPP_INFO(node->get_logger(), "p_pre->lidar_type: %i", p_pre->lidar_type);
 
     path.header.stamp    = node->get_clock()->now();
     path.header.frame_id = slam_map_frame;
@@ -926,13 +937,21 @@ int main(int argc, char** argv)
         else
             cout << "~~~~"<<ROOT_DIR<<" doesn't exist" << endl;
     }
+
+    
     
     /*** ROS create_subscription initialization ***/
-    if (p_pre->lidar_type == AVIA)
-        auto sub_pcl = node->create_subscription<livox_ros_driver2::msg::CustomMsg>(lid_topic, 200000, livox_pcl_cbk);
-    else
-        auto sub_pcl = node->create_subscription<sensor_msgs::msg::PointCloud2>(lid_topic, 200000, standard_pcl_cbk);
-    auto sub_imu = node->create_subscription<sensor_msgs::msg::Imu>(imu_topic, 200000, imu_cbk);
+    rclcpp::SubscriptionBase::SharedPtr sub_pcl;
+    if (p_pre->lidar_type == AVIA) {
+        sub_pcl = node->create_subscription<livox_ros_driver2::msg::CustomMsg>(lid_topic, 200000, livox_pcl_cbk);
+        RCLCPP_INFO(node->get_logger(), "FAST-LIO subscribing to livox pcl");
+    }
+    else {
+        sub_pcl = node->create_subscription<sensor_msgs::msg::PointCloud2>(lid_topic, 200000, standard_pcl_cbk);
+        RCLCPP_INFO(node->get_logger(), "FAST-LIO subscribing to livox pcl");
+    }
+        
+    auto sub_imu = node->create_subscription<sensor_msgs::msg::Imu>(imu_topic, rclcpp::SensorDataQoS(), imu_cbk);
     auto sub_keyframes = node->create_subscription<nav_msgs::msg::Path>(keyFrame_topic, 10, keyFrame_cbk);
     auto sub_keyframes_id = node->create_subscription<std_msgs::msg::Header>(keyFrame_id_topic, 10, keyFrame_id_cbk);
     auto pubLaserCloudFull = node->create_publisher<sensor_msgs::msg::PointCloud2>
@@ -986,8 +1005,6 @@ int main(int argc, char** argv)
             }
         }
 
-
-
         if(sync_packages(Measures))
         {
             if (flg_reset)
@@ -1023,6 +1040,7 @@ int main(int argc, char** argv)
             flg_EKF_inited = (Measures.lidar_beg_time - first_lidar_time) < INIT_TIME ? \
                             false : true;
             // todo:改为多线程ikdtree更新
+
             if(count % updateFrequency == 0 ){
                 count = 1;
                 if(recontructKdTree && pathKeyFrames.poses.size() > 20){

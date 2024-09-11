@@ -6,42 +6,20 @@
     <arg name="base_frame" default="base_link"/>
     <arg name="slam_pose_topic" default="/decco/pose"/>
 
-    <arg name="lc_enable" default="true"/>
     <arg name="rviz" default="true" />
-
-    <rosparam command="load" file="$(find fast_lio_lc)/config/velodyne16.yaml" />
-
-    <!-- 调参说明：  -->
-    <!-- point_filter_num，和filter_size_surf是滤波参数，越小前端效果越好，但运行越慢 -->
-    <param name="feature_extract_enable" type="bool" value="0"/>
-    <param name="point_filter_num" type="int" value="4"/>
-    <param name="max_iteration" type="int" value="3" />
-    <param name="scan_publish_enable" type="bool" value="1" />
-	  <param name="dense_publish_enable" type="bool" value="1" />
-    <param name="filter_size_surf" type="double" value="0.5" />   <!-- 对当前点云的filter -->
-    <param name="filter_size_map" type="double" value="0.2" />    <!-- 对地图的filter -->
-    <param name="cube_side_length" type="double" value="1000" />
-    <param name="debug_mode_enable" type="bool" value="0" />
-    <param name="pcd_save_enable" type="bool" value="0" />
-
-    <!-- visualization -->
-    <param name="visulize_map" value="true"/>
-
-    <!--optimization  -->
-    <param name="recontructKdTree" value="$(arg lc_enable)"/> <!-- 打开更新ikdtree -->
-    <param name="updateState" value="$(arg lc_enable)"/>   <!-- 打开更新状态 -->
-    <param name="updateFrequency" value="30"/> <!-- 每接受updateFrequency个点云，更新一次， 不能太大-->
     
-    <node pkg="fast_lio_lc" type="fastlio_mapping" name="laserMapping" output="screen" respawn="true">
-      <param name="imu_topic" type="string" value="$(arg imu_topic)"/>
-      <param name="slam_map_frame" type="string" value="$(arg slam_map_frame)"/>
-      <param name="base_frame" type="string" value="$(arg base_frame)"/>
-      <param name="slam_pose_topic" type="string" value="$(arg slam_pose_topic)"/>
-      <param name="frame_id" type="string" value="base_link"/>
+    <node pkg="fast_lio_lc" exec="fast_lio_lc_node" output="screen">
+      <param name="imu_topic" value="$(var imu_topic)"/>
+      <param name="slam_map_frame" value="$(var slam_map_frame)"/>
+      <param name="base_frame" value="$(var base_frame)"/>
+      <param name="slam_pose_topic" value="$(var slam_pose_topic)"/>
+      <param name="frame_id" value="base_link"/>
+
+      <param from="$(find-pkg-share fast_lio_lc)/config/velodyne.yaml" />
     </node> 
 
-    <group if="$(arg rviz)">
-    <node launch-prefix="nice" pkg="rviz" type="rviz" name="rviz_fast_lio" args="-d $(find fast_lio_lc)/rviz_cfg/loam_livox.rviz" />
-    </group>
+    <!-- <group if="$(var rviz)">
+      <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share fast_lio_lc)/rviz_cfg/loam_livox.rviz" />
+    </group> -->
 
 </launch>
