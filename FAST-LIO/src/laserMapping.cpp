@@ -948,7 +948,7 @@ int main(int argc, char** argv)
     }
     else {
         sub_pcl = node->create_subscription<sensor_msgs::msg::PointCloud2>(lid_topic, 200000, standard_pcl_cbk);
-        RCLCPP_INFO(node->get_logger(), "FAST-LIO subscribing to livox pcl");
+        RCLCPP_INFO(node->get_logger(), "FAST-LIO subscribing to PointCloud2 pcl");
     }
         
     auto sub_imu = node->create_subscription<sensor_msgs::msg::Imu>(imu_topic, rclcpp::SensorDataQoS(), imu_cbk);

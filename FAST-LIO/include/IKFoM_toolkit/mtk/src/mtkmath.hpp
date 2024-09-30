@@ -249,6 +249,9 @@ Eigen::Matrix<typename Base::scalar, 3, 3> A_matrix(const Base & v){
 template<class scalar, int n>
 scalar exp(vectview<scalar, n> result, vectview<const scalar, n> vec, const scalar& scale = 1) {
 	scalar norm2 = vec.squaredNorm();
+	if (std::isnan(norm2))
+		norm2 = 0;
+
 	std::pair<scalar, scalar> cos_sinc = cos_sinc_sqrt(scale*scale * norm2);
 	scalar mult = cos_sinc.second * scale; 
 	result = mult * vec;
