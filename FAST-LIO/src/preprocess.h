@@ -90,15 +90,12 @@ class Preprocess
   void process(const sensor_msgs::msg::PointCloud2::SharedPtr msg, PointCloudXYZI::Ptr &pcl_out);
   void set(bool feat_en, int lid_type, double bld, int pfilt_num);
 
-  // sensor_msgs::msg::PointCloud2::ConstPtr pointcloud;
   PointCloudXYZI pl_full, pl_corn, pl_surf;
   PointCloudXYZI pl_buff[128]; //maximum 128 line lidar
   vector<orgtype> typess[128]; //maximum 128 line lidar
   int lidar_type = 1, point_filter_num = 2, N_SCANS = 16;
   double blind = 0.01;
-  bool feature_enabled = false, given_offset_time;
-  // ros::Publisher pub_full, pub_surf, pub_corn;
-    
+  bool feature_enabled = false, given_offset_time;    
 
   private:
   void avia_handler(const livox_ros_driver2::msg::CustomMsg::SharedPtr msg);
