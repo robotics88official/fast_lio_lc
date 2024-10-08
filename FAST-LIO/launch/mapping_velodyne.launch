@@ -18,8 +18,8 @@
       <param from="$(find-pkg-share fast_lio_lc)/config/velodyne.yaml" />
     </node> 
 
-    <!-- <group if="$(var rviz)">
+    <group if="$(var rviz)">
       <node pkg="rviz2" exec="rviz2" name="rviz2" args="-d $(find-pkg-share fast_lio_lc)/rviz_cfg/loam_livox.rviz" />
-    </group> -->
+    </group>
 
 </launch>
