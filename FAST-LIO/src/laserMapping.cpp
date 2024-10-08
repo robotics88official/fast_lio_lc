@@ -50,7 +50,6 @@
 #include <fstream>
 #include <csignal>
 #include <unistd.h>
-// #include <Python.h>
 #include <so3_math.h>
 #include "rclcpp/rclcpp.hpp"
 #include <Eigen/Core>
@@ -385,7 +384,6 @@ void livox_pcl_cbk(const livox_ros_driver2::msg::CustomMsg::SharedPtr msg)
 void imu_cbk(const sensor_msgs::msg::Imu::SharedPtr msg_in)
 {
     publish_count ++;
-    // cout<<"IMU got at: "<<msg_in->timeInSeconds(header.stamp)<<endl;
     sensor_msgs::msg::Imu::Ptr msg(new sensor_msgs::msg::Imu(*msg_in));
 
     if (abs(timediff_lidar_wrt_imu) > 0.1 && time_sync_en)
@@ -576,7 +574,6 @@ void publish_frame_body(const rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::
     pcl::toROSMsg(*laserCloudIMUBody, laserCloudmsg);
     laserCloudmsg.header.stamp = doubleToRclcppTime(lidar_end_time);
     laserCloudmsg.header.frame_id = base_frame;
-    // laserCloudmsg.header.seq = data_seq;
     pubLaserCloudFull_body->publish(laserCloudmsg);
     cloudBuff.push( pair<int, PointCloudXYZI::Ptr>(data_seq ,laserCloudIMUBody) );  // 缓存所有发给后端的点云
     publish_count -= PUBFRAME_PERIOD;
@@ -813,7 +810,6 @@ int main(int argc, char** argv)
     node->declare_parameter("visulize_map", visulize_map);
 
     node->declare_parameter("common.lid_topic",lid_topic);
-    // node->declare_parameter("common.imu_topic", imu_topic);
     node->declare_parameter("common.keyFrame_topic", keyFrame_topic);
     node->declare_parameter("common.keyFrame_id_topic", keyFrame_id_topic);
     node->declare_parameter("common.time_sync_en", time_sync_en);
@@ -858,7 +854,6 @@ int main(int argc, char** argv)
     node->get_parameter("visulize_map", visulize_map);
 
     node->get_parameter("common.lid_topic",lid_topic);
-    // node->get_parameter("common.imu_topic", imu_topic);
     node->get_parameter("common.keyFrame_topic", keyFrame_topic);
     node->get_parameter("common.keyFrame_id_topic", keyFrame_id_topic);
     node->get_parameter("common.time_sync_en", time_sync_en);
