@@ -22,12 +22,12 @@
 
         preprocess:
             lidar_type: 1                # 1 for Livox serials LiDAR, 2 for Velodyne LiDAR, 3 for ouster LiDAR, 
-            scan_line: 6
+            scan_line: 4
             blind: 4.0
 
         mapping:
             det_range:     70.0
-            fov_degree:    180.0
+            fov_degree:    360.0
             gyr_cov: 0.1
             acc_cov: 0.1
             b_gyr_cov: 0.0001
